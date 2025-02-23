@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Date
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from typing import List, Optional
@@ -82,7 +84,8 @@ def get_db():
 @app.get("/test", response_model=List[BlogPostSchema])
 def read_articles(db: Session = Depends(get_db)):
     posts = db.query(BlogPost).order_by(BlogPost.published_date.desc()).all()
-    return posts
+    posts_json = jsonable_encoder(posts)
+    return JSONResponse(content=posts_json, media_type="application/json; charset=utf-8")
 
 # # 新規投稿を作成するエンドポイント
 # @app.post("/posts", response_model=BlogPostSchema)
