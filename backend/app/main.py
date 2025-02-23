@@ -28,7 +28,7 @@ class BlogPost(Base):
     __tablename__ = "article"
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
-    summary150 = Column(String(50), nullable=False)
+    summary150 = Column(String(200), nullable=False)
     summary1000 = Column(String(1000), nullable=False)
     content = Column(Text, nullable=False)
     url = Column(String(255), nullable=False)
@@ -42,6 +42,7 @@ class BlogPost(Base):
 class BlogPostSchema(BaseModel):
     id: int
     title: str
+    summary150: str
     summary150: str
     summary1000: str
     content: str
