@@ -9,8 +9,6 @@ COPY package.json yarn.lock ./
 RUN yarn install
 
 # アプリケーションコードをコピー
-# COPY ./public /app/public
-# COPY ./src /app/src
 COPY . .
 
 # 開発サーバーを起動
