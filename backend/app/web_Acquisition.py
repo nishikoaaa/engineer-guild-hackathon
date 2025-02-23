@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI  # 変更: langchain_openai からインポート
 from langchain.prompts.chat import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain.schema import SystemMessage
 
@@ -18,7 +18,9 @@ url = "https://qiita.com/mzmz__02/items/95a32ca71728e5237ed5"
 
 # URLからHTMLを取得（User-Agent 指定）
 headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                   "AppleWebKit/537.36 (KHTML, like Gecko) "
+                   "Chrome/115.0.0.0 Safari/537.36")
 }
 response = requests.get(url, headers=headers)
 html_content = response.content
@@ -104,7 +106,6 @@ if published_date:
     except Exception as e:
         print("日付のパースに失敗しました:", e)
 
-
 # 本文抽出（Qiita の記事本文は <div id="personal-public-article-body"> 内にあると仮定）
 content_div = soup.find("div", id="personal-public-article-body")
 if content_div is None:
@@ -125,14 +126,14 @@ prompt_template = ChatPromptTemplate.from_messages([
     SystemMessage(
         content=(
             "以下は、サイトから抽出した本文です。"
-            "この本文の序論と結論をつなぎ合わせて150文字程度で出力して。"
+            "この本文の序論と結論が伝わる文章150文字程度で書いて。"
         )
     ),
     HumanMessagePromptTemplate.from_template("{text}")
 ])
 formatted_prompt = prompt_template.format_prompt(text=text_data)
 messages = formatted_prompt.to_messages()
-result = llm(messages)
+result = llm.invoke(messages)  # 変更: __call__ の代わりに invoke を使用
 summary_text = result.content
 
 # SQLite データベースに接続
@@ -162,8 +163,6 @@ if "published_date" not in columns:
     cursor.execute("ALTER TABLE summaries ADD COLUMN published_date TEXT")
 conn.commit()
 
-# 公開日時が取得できなかった場合はレコードを追加しない
-print("取得した公開日時:", published_date)
 if not published_date:
     print("公開日時が取得できなかったため、レコードは追加しません。")
 else:
