@@ -12,8 +12,6 @@ ibdata1
 ibtmp1
 *.ibd
 
-.env
-
 mysql/data
 stockglance/data
 stockglance/news_data
