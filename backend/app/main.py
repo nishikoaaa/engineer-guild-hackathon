@@ -41,6 +41,7 @@ class BlogPostSchema(BaseModel):
     id: int
     title: str
     summary150: str
+    summary150: str
     summary1000: str
     content: str
     url: str
