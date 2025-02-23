@@ -8,6 +8,7 @@ import datetime
 import os
 from typing import List, Optional
 from pydantic import BaseModel
+from .api.endpoints import auth
 
 # MySQLの接続情報（指定のDSNを利用）
 DATABASE_URL = "mysql+pymysql://user:password@db:3306/db?charset=utf8mb4"
@@ -52,6 +53,8 @@ class BlogPostSchema(BaseModel):
 
 # FastAPIアプリケーションの初期化
 app = FastAPI()
+
+app.include_router(auth.router)
 
 app_env = os.getenv("FASTAPI_ENV", "development")
 if app_env == "development":
