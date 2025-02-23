@@ -14,18 +14,18 @@ INSERT INTO account (name, password) VALUES ('test', 'testpass'),('test1', 'test
 CREATE TABLE article (
     id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
-    summary50 VARCHAR(50) NOT NULL,
-    summary1000 VARCHAR(1000) NOT NULL,
+    summary150 VARCHAR(200) NOT NULL,
+    summary1000 VARCHAR(1000),
     content TEXT NOT NULL,
     url VARCHAR(255) NOT NULL,
-    published_date DATE NOT NULL,
+    published_date DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE article CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- サンプルデータの挿入
-INSERT INTO article (title, summary50, summary1000, content, url, published_date) VALUES
+INSERT INTO article (title, summary150, summary1000, content, url, published_date) VALUES
 ('新年の目標達成の秘訣', 
  '新年の目標達成法を紹介', 
  '新年に立てる目標の達成方法を解説します。年初に意気込んで目標を立てたものの、途中で挫折してしまう経験はありませんか？目標を達成するためには、具体的な計画を立てることが重要です。目標を小さなステップに分けて実行し、進捗を確認しながら軌道修正を行うことで、無理なく目標に近づけます。また、モチベーションを維持するためには、達成した際の自分を想像したり、定期的に自己評価を行うことが効果的です。さらに、目標を周囲に宣言することで、自分にプレッシャーをかけるのも一つの方法です。日々の小さな努力を積み重ねることが、最終的な成功へと繋がります。2025年を素晴らしい一年にするために、目標を達成するための具体的なアクションプランを立てましょう。', 
