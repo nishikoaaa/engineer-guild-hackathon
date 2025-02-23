@@ -1,0 +1,89 @@
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      # - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/ssl/live:/etc/nginx/ssl/live
+      - ./nginx/ssl/archive:/etc/nginx/ssl/archive
+      - ./nginx/logs:/var/log/nginx
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - backend
+      - frontend
+    environment:
+      TZ: Asia/Tokyo
+    networks:
+      - default
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do sleep 6h & wait $${!}; certbot renew; done'
+    networks:
+      - default
+
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    environment:
+      FASTAPI_ENV: production
+      TZ: Asia/Tokyo
+    depends_on:
+      - db
+    networks:
+      - default
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    stdin_open: true
+    environment: 
+      # - REACT_APP_API_BASE_URL=
+      - TZ=Asia/Tokyo
+    tty: true
+    networks:
+      - default
+
+  db:
+    image: mysql:8.0
+    container_name: db
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Tokyo
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
