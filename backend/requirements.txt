@@ -56,3 +56,4 @@ ace-tools-open
 python-dotenv
 selenium
 webdriver_manager
+jinja2
