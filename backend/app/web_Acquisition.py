@@ -1,22 +1,48 @@
 import os
-import sqlite3
 import requests
 import json
-from datetime import datetime
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI  # 変更: langchain_openai からインポート
+from langchain_openai import ChatOpenAI
 from langchain.prompts.chat import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain.schema import SystemMessage
 
-# .env ファイルから環境変数を読み込む
+# SQLAlchemy のインポート
+from sqlalchemy import create_engine, Column, Integer, String, Text, Date, DateTime
+from sqlalchemy.orm import sessionmaker, declarative_base
+import datetime
+from dateutil.parser import isoparse  # 追加：dateutil.parser を利用
+
+# .env から環境変数を読み込み
 load_dotenv()
 api_key = os.environ['OPENAI_API_KEY']
 
-# 要約対象のURL（例: Qiitaの記事またはその他の日付情報が含まれる記事）
+# MySQL の接続情報（適宜書き換えてください）
+DATABASE_URL = "mysql+pymysql://user:password@localhost:3306/db?charset=utf8mb4"
+
+# エンジン、セッション、Base の作成
+engine = create_engine(DATABASE_URL, echo=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# 既存テーブル「article」のモデル定義
+class BlogPost(Base):
+    __tablename__ = "article"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    summary150 = Column(String(200), nullable=False)  # 抽出本文の先頭200文字など
+    summary1000 = Column(String(1000), nullable=True)   # 後で追加するためNULL許容
+    content = Column(Text, nullable=False)            # 記事本文全体
+    url = Column(String(255), nullable=False)
+    published_date = Column(Date, nullable=False)      # Date 型で保存
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+Base.metadata.create_all(bind=engine)
+
+# 要約対象の記事URL（例：Qiitaの記事）
 url = "https://qiita.com/mzmz__02/items/95a32ca71728e5237ed5"
 
-# URLからHTMLを取得（User-Agent 指定）
+# URLからHTML取得（User-Agent 指定）
 headers = {
     "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                    "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -26,14 +52,10 @@ response = requests.get(url, headers=headers)
 html_content = response.content
 soup = BeautifulSoup(html_content, "html.parser")
 
-# サイトのタイトル（<title>タグ）を抽出
+# サイトのタイトル取得（<title>タグ）
 title = soup.title.get_text() if soup.title else "タイトルなし"
 
 def get_published_date_ldjson(soup):
-    """
-    <script type="application/ld+json"> 内の JSON をパースし、
-    "datePublished" を優先的に取得し、なければ "dateCreated"、さらになければ "dateModified" を返す。
-    """
     published_date = None
     scripts = soup.find_all("script", type="application/ld+json")
     for script in scripts:
@@ -53,10 +75,6 @@ def get_published_date_ldjson(soup):
     return published_date
 
 def get_published_date_from_time(soup):
-    """
-    記事内の <time> 要素（itemprop="datepublished"）から公開日時を取得する。
-    datetime 属性があればそれを返し、なければテキストから抽出する。
-    """
     time_elem = soup.find("time", itemprop="datepublished")
     if time_elem:
         if time_elem.has_attr("datetime"):
@@ -67,10 +85,6 @@ def get_published_date_from_time(soup):
     return None
 
 def get_published_date_from_meta(soup):
-    """
-    ld+json や <time> 要素から取得できなかった場合のフォールバックとして、
-    meta タグから "article:published_time"、"datePublished"、"dateCreated"、"dateModified" を探す。
-    """
     published_date = None
     meta_pub = soup.find("meta", property="article:published_time")
     if meta_pub and meta_pub.get("content"):
@@ -89,97 +103,74 @@ def get_published_date_from_meta(soup):
                     published_date = meta_mod.get("content")
     return published_date
 
-# まず ld+json から公開日時を取得
+# 公開日時取得（優先順：ld+json > <time> > meta）
 published_date = get_published_date_ldjson(soup)
-# ld+json で取得できなければ <time> 要素から取得
 if not published_date:
     published_date = get_published_date_from_time(soup)
-# それでも取得できなければ meta タグから取得
 if not published_date:
     published_date = get_published_date_from_meta(soup)
 
-# 日付が取得できた場合、形式を "YYYY-MM-DDTHH:MM" に固定
+# 日付のパースと形式固定
 if published_date:
     try:
-        dt = datetime.fromisoformat(published_date.replace("Z", "+00:00"))
-        published_date = dt.strftime("%Y-%m-%dT%H:%M")
+        dt = isoparse(published_date)
+        published_date_str = dt.strftime("%Y-%m-%dT%H:%M")
+        published_date_date = dt.date()  # Date型に変換
     except Exception as e:
         print("日付のパースに失敗しました:", e)
+        published_date_str = None
+        published_date_date = None
+else:
+    published_date_str = None
+    published_date_date = None
 
-# 本文抽出（Qiita の記事本文は <div id="personal-public-article-body"> 内にあると仮定）
+print("取得した公開日時:", published_date_str if published_date_str else "None")
+
+# 本文抽出（Qiita の記事本文は <div id="personal-public-article-body"> 内）
 content_div = soup.find("div", id="personal-public-article-body")
 if content_div is None:
     print("記事本文が見つかりませんでした。<body>タグから抽出します。")
     content_div = soup.body
-
 paragraphs = content_div.find_all("p")
 text_data = "\n".join([p.get_text() for p in paragraphs])
 
-# ChatOpenAI を利用して要約（モデル名を "4o-mini" に変更）
+# 要約生成（モデル名を "gpt-4o-mini-2024-07-18" に変更、存在しない場合は利用可能なモデルに変更）
 llm = ChatOpenAI(
-    model_name="gpt-4o-mini-2024-07-18",
+    model_name="gpt-4o-mini-2024-07-18",  
     temperature=0,
     openai_api_key=api_key
 )
-
 prompt_template = ChatPromptTemplate.from_messages([
     SystemMessage(
         content=(
-            "以下は、サイトから抽出した本文です。"
-            "この本文の序論と結論が伝わる文章150文字程度で書いて。"
+            "以下は、記事本文です。150文字程度で記事の概要をまとめてください。"
         )
     ),
     HumanMessagePromptTemplate.from_template("{text}")
 ])
 formatted_prompt = prompt_template.format_prompt(text=text_data)
 messages = formatted_prompt.to_messages()
-result = llm.invoke(messages)  # 変更: __call__ の代わりに invoke を使用
+result = llm.invoke(messages)
 summary_text = result.content
 
-# SQLite データベースに接続
-db_filename = "summaries.db"
-conn = sqlite3.connect(db_filename)
-cursor = conn.cursor()
-conn.commit()
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS summaries (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    url TEXT,
-    title TEXT,
-    extracted_text TEXT,
-    summary TEXT,
-    published_date TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
-""")
-conn.commit()
-
-cursor.execute("PRAGMA table_info(summaries)")
-columns = [info[1] for info in cursor.fetchall()]
-if "title" not in columns:
-    cursor.execute("ALTER TABLE summaries ADD COLUMN title TEXT")
-if "published_date" not in columns:
-    cursor.execute("ALTER TABLE summaries ADD COLUMN published_date TEXT")
-conn.commit()
-
-if not published_date:
+# MySQL に保存（公開日時が取得できた場合のみ保存）
+if not published_date_date:
     print("公開日時が取得できなかったため、レコードは追加しません。")
 else:
-    cursor.execute(
-        "INSERT INTO summaries (url, title, extracted_text, summary, published_date) VALUES (?, ?, ?, ?, ?)",
-        (url, title, text_data, summary_text, published_date)
+    db = SessionLocal()
+    new_post = BlogPost(
+        url=url,
+        title=title,
+        summary150=text_data[:200],  # 先頭200文字を summary150 に
+        summary1000=None,             # 後で追加するため NULL
+        content=text_data,
+        published_date=published_date_date
     )
-    conn.commit()
-
-cursor.execute("SELECT title, summary, published_date FROM summaries ORDER BY id DESC LIMIT 1")
-row = cursor.fetchone()
-if row:
+    db.add(new_post)
+    db.commit()
+    db.refresh(new_post)
     print("----- データベースに保存された最新のレコード -----")
-    print("タイトル:", row[0])
-    print("要約文:", row[1])
-    print("公開日時:", row[2])
-else:
-    print("レコードが見つかりませんでした。")
-
-conn.close()
+    print("タイトル:", new_post.title)
+    print("要約文 (summary150):", new_post.summary150)
+    print("公開日時:", new_post.published_date)
+    db.close()
