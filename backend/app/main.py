@@ -85,6 +85,69 @@ def read_articles(db: Session = Depends(get_db)):
         media_type="application/json; charset=utf-8",
     )
 
+class TopPageItem(BaseModel):
+    id: int
+    title: str
+    summary50: str
+    summary1000: str
+    content: str
+    url: str
+    published_date: str  # 日付はシンプルに文字列で扱っています
+    created_at: str
+
+@app.get("/TopPage", response_model=List[TopPageItem])
+def top_page():
+    dummy_data = [
+        {
+            "id": 0,
+            "title": "最新ニュース: テクノロジーの革新",
+            "summary50": "新たな技術が市場に衝撃を与える。",
+            "summary1000": (
+                "本日のニュースでは、最新のテクノロジートレンドに関する詳細な分析をお届けします。"
+                "AI、IoT、そしてブロックチェーン技術の急速な発展により、今後の産業構造が大きく変化することが期待されます。"
+            ),
+            "content": (
+                "詳細記事: 新技術の導入事例、専門家のインタビュー、及び市場分析を通じて、"
+                "今後の展望について考察します。"
+            ),
+            "url": "https://example.com/news/tech",
+            "published_date": "2025-02-23",
+            "created_at": "2025-02-23T14:19:38.266Z"
+        },
+        {
+            "id": 1,
+            "title": "経済ニュース: 市場動向レポート",
+            "summary50": "株式市場に変動、注目の経済指標も。",
+            "summary1000": (
+                "本日の経済ニュースは、国内外の市場動向に焦点を当てたレポートです。"
+                "主要株価指数の急変や、最新の経済指標、そして政府の経済政策に関する情報を詳細に分析しています。"
+            ),
+            "content": (
+                "記事内容: 市場における最新のデータと、専門家による分析を基に、"
+                "今後の投資戦略やリスクについて解説します。"
+            ),
+            "url": "https://example.com/news/economy",
+            "published_date": "2025-02-23",
+            "created_at": "2025-02-23T14:19:38.266Z"
+        },
+        {
+            "id": 2,
+            "title": "エンタメ: 映画レビュー特集",
+            "summary50": "今話題の最新映画を徹底レビュー。",
+            "summary1000": (
+                "エンターテインメント分野では、最新公開の映画に関するレビューが注目を集めています。"
+                "ストーリー、演技、映像美、そして音楽のクオリティに至るまで、総合的な評価を行いました。"
+            ),
+            "content": (
+                "レビュー記事: 最新の話題作について、監督やキャストのコメント、映画の見どころを徹底分析します。"
+            ),
+            "url": "https://example.com/news/entertainment",
+            "published_date": "2025-02-23",
+            "created_at": "2025-02-23T14:19:38.266Z"
+        }
+    ]
+    return dummy_data
+
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run(app, host='0.0.0.0', port=4000)
