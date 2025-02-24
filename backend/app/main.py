@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Date
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
@@ -8,11 +8,10 @@ from typing import List, Optional
 from pydantic import BaseModel
 import datetime
 import os
-from typing import List, Optional
-from pydantic import BaseModel
+import json
 
-# MySQLの接続情報（指定のDSNを利用）
-DATABASE_URL = "mysql+pymysql://user:password@db:3306/db?charset=utf8mb4"
+# MySQLの接続情報（MySQL Connector/Python用のDSNに変更）
+DATABASE_URL = "mysql+mysqlconnector://user:password@db:3306/db?charset=utf8mb4"
 
 # SQLAlchemyのエンジンを作成
 engine = create_engine(DATABASE_URL, echo=True)
@@ -35,14 +34,10 @@ class BlogPost(Base):
     published_date = Column(Date, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-# テーブルを作成（既に存在する場合はスキップされます）
-# Base.metadata.create_all(bind=engine)
-
 # Pydanticモデル
 class BlogPostSchema(BaseModel):
     id: int
     title: str
-    summary150: str
     summary150: str
     summary1000: str
     content: str
@@ -61,8 +56,6 @@ if app_env == "development":
     allow_credentials = False
     origins = ["http://localhost:3000"]
 else:
-    # allow_credentials = True
-    # origins = [""]
     pass
 
 app.add_middleware(
@@ -85,27 +78,13 @@ def get_db():
 @app.get("/test", response_model=List[BlogPostSchema])
 def read_articles(db: Session = Depends(get_db)):
     posts = db.query(BlogPost).order_by(BlogPost.published_date.desc()).all()
-    posts_json = jsonable_encoder(posts)
-    return JSONResponse(
-        content=posts_json,
-        headers={"Content-Type": "application/json; charset=utf-8"}
+    posts_data = jsonable_encoder(posts)
+    json_data = json.dumps(posts_data, ensure_ascii=False)
+    return Response(
+        content=json_data,
+        media_type="application/json; charset=utf-8",
     )
-    # return JSONResponse(content=posts_json, media_type="application/json; charset=utf-8")
 
-# # 新規投稿を作成するエンドポイント
-# @app.post("/posts", response_model=BlogPostSchema)
-# def create_post(post: BlogPostCreate, db: Session = Depends(get_db)):
-#     new_post = BlogPost(
-#         title=post.title,
-#         content=post.content,
-#         meta=post.meta
-#     )
-#     db.add(new_post)
-#     db.commit()
-#     db.refresh(new_post)
-#     return new_post
-
-# アプリケーションのエントリーポイント（ローカル実行用）
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run(app, host='0.0.0.0', port=4000)

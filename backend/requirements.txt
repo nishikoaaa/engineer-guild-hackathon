@@ -56,3 +56,5 @@ ace-tools-open
 python-dotenv
 selenium
 webdriver_manager
+
+mysql-connector-python
