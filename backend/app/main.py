@@ -26,6 +26,9 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+# ログイン機能できるまで仮で
+user_id = 1
+
 #############################################################
 # データベース関係
 
@@ -43,6 +46,7 @@ def get_db_connection():
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Database connection error: {err}")
 
+# gmail挿入
 def insert_gmail(gmail: str):
     # データベース接続の取得
     conn = get_db_connection()
@@ -58,6 +62,25 @@ def insert_gmail(gmail: str):
     except mysql.connector.Error as err:
         conn.rollback()
         print(f"Error inserting gmail: {err}")
+        return None
+    finally:
+        cursor.close()
+        conn.close()
+
+# ログ挿入
+def insert_read_log(user_id: int, article_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = "INSERT INTO read_log (user_id, article_id) VALUES (%s, %s)"
+        cursor.execute(query, (user_id, article_id))
+        conn.commit()
+        inserted_id = cursor.lastrowid
+        print(f"Inserted read_log with ID: {inserted_id}")
+        return inserted_id
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Error inserting read_log: {err}")
         return None
     finally:
         cursor.close()
@@ -87,6 +110,11 @@ class TopPageItem(BaseModel):
 # アカウント登録用のPydanticモデル
 class AccountIn(BaseModel):
     gmail: EmailStr
+
+# ログ登録用のモデル
+class ReadLogIn(BaseModel):
+    user_id: int
+    article_id: int
 
 #############################################################
 # ルート
@@ -126,6 +154,8 @@ def register_account(account: AccountIn):
         content={"message": "Account registered successfully", "id": inserted_id},
         media_type="application/json; charset=utf-8"
     )
+
+# 
 
 # フロント開発用にダミーデータを返す関数
 @app.get("/TopPage", response_model=list[TopPageItem])
@@ -286,6 +316,16 @@ def top_page():
         }
     ]
     return JSONResponse(content=dummy_data, media_type="application/json; charset=utf-8")
+
+@app.post("/log_read")
+def log_read_event(log: ReadLogIn):
+    inserted_id = insert_read_log(log.user_id, log.article_id)
+    if inserted_id is None:
+        raise HTTPException(status_code=400, detail="Failed to insert read log")
+    return JSONResponse(
+        content={"message": "Read log recorded", "id": inserted_id},
+        media_type="application/json; charset=utf-8"
+    )
 
 if __name__ == '__main__':
     import uvicorn

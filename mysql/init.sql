@@ -60,3 +60,12 @@ ALTER TABLE survey CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 INSERT INTO survey (userid, age, gender, job, preferred_article_detail) VALUES
     (1, 25, 'male', 'エンジニア', '技術系の記事をもっと読みたい。特にAI関連に興味がある。'),
     (2, 32, 'female', 'マーケティング', 'マーケティング戦略やSNSの最新トレンドについて知りたい。');
+
+-- read_log テーブルの作成
+CREATE TABLE read_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    article_id INT NOT NULL,
+    read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_read_log_article FOREIGN KEY (article_id) REFERENCES article(id)
+);
