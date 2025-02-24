@@ -31,6 +31,7 @@ def get_db_connection():
             user="user",
             password="password",
             database="db",
+            use_unicode = True,
             charset="utf8mb4"
         )
         return conn

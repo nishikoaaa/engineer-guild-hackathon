@@ -14,6 +14,9 @@ services:
     environment:
       FASTAPI_ENV: development
       TZ: Asia/Tokyo
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+      PYTHONIOENCODING: utf-8
     depends_on:
       - db
     networks:
@@ -42,6 +45,7 @@ services:
     restart: always
     ports:
       - "3306:3306"
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_general_ci", "--character-set-client-handshake=false"]
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
