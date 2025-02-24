@@ -1,14 +1,16 @@
 ALTER DATABASE db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-CREATE TABLE account(
+CREATE TABLE account (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(40) COLLATE utf8mb4_unicode_ci NOT NULL,
-    password VARCHAR(20) COLLATE utf8mb4_unicode_ci NOT NULL
+    gmail VARCHAR(100) COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE account CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-INSERT INTO account (name, password) VALUES ('test', 'testpass'),('test1', 'test1pass');
+-- サンプルデータの挿入（gmailのみ）
+INSERT INTO account (gmail) VALUES 
+    ('test@gmail.com'),
+    ('test1@gmail.com');
 
 -- article テーブルの作成
 CREATE TABLE article (
@@ -42,21 +44,19 @@ INSERT INTO article (title, summary150, summary1000, content, url, published_dat
 
 -- survey テーブルの作成
 CREATE TABLE survey (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    userid VARCHAR(100) NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    userid INT NOT NULL,
     age INT NOT NULL,
     gender ENUM('male', 'female', 'other') NOT NULL,
     job VARCHAR(100) NOT NULL,
     preferred_article_detail TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_survey_account FOREIGN KEY (userid) REFERENCES account(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE survey CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- サンプルデータの挿入
+-- サンプルデータの挿入（useridはaccountのidに合わせる）
 INSERT INTO survey (userid, age, gender, job, preferred_article_detail) VALUES
-('1', 25, 'male', 'エンジニア', '技術系の記事をもっと読みたい。特にAI関連に興味がある。'),
-
-('2', 32, 'female', 'マーケティング', 'マーケティング戦略やSNSの最新トレンドについて知りたい。'),
-
-('3', 28, 'other', 'デザイナー', 'デザインのインスピレーションになる記事が欲しい。');
+    (1, 25, 'male', 'エンジニア', '技術系の記事をもっと読みたい。特にAI関連に興味がある。'),
+    (2, 32, 'female', 'マーケティング', 'マーケティング戦略やSNSの最新トレンドについて知りたい。');
