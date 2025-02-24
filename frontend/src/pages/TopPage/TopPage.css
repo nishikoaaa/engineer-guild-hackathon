@@ -1,0 +1,49 @@
+/* TopPage.css */
+
+/* 全体のスタイル */
+.toppage {
+    height: 100vh;
+}
+
+.articles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: space-between;
+}
+
+.article-card {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    width: 250px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: calc(30% - 20px);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.article-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.article-card h2 {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.article-card p {
+    font-size: 14px;
+    color: #555;
+}
+
+.article-card a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.article-card a:hover {
+    text-decoration: underline;
+}
