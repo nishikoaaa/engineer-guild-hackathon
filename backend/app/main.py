@@ -86,7 +86,11 @@ def get_db():
 def read_articles(db: Session = Depends(get_db)):
     posts = db.query(BlogPost).order_by(BlogPost.published_date.desc()).all()
     posts_json = jsonable_encoder(posts)
-    return JSONResponse(content=posts_json, media_type="application/json; charset=utf-8")
+    return JSONResponse(
+        content=posts_json,
+        headers={"Content-Type": "application/json; charset=utf-8"}
+    )
+    # return JSONResponse(content=posts_json, media_type="application/json; charset=utf-8")
 
 # # 新規投稿を作成するエンドポイント
 # @app.post("/posts", response_model=BlogPostSchema)
