@@ -8,14 +8,15 @@ import os
 router = APIRouter()
 
 # 環境変数の読み込み
-load_dotenv(os.path.join(os.path.abspath(os.curdir), '.env'))
-CLIENT_ID = os.getenv('CLIENT_ID')
-CLIENT_SECRET = os.getenv('CLIENT_SECRET')
-REDIRECT_URI = os.getenv('REDIRECT_URI')
+load_dotenv()
+
+CLIENT_ID = os.environ['CLIENT_ID']
+CLIENT_SECRET = os.environ['CLIENT_SECRET']
+REDIRECT_URI = os.environ['REDIRECT_URI']
 AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 
-templates = Jinja2Templates(directory="frontend/src/pages")
+templates = Jinja2Templates(directory="app/templates")
 
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
     authorizationUrl=AUTHORIZATION_URL,
@@ -28,7 +29,7 @@ async def login_form(request: Request):
         "request": request,
         "auth_url": (
             f"{AUTHORIZATION_URL}?response_type=code&client_id={CLIENT_ID}&"
-            f"redirect_uri={REDIRECT_URI}&scope=openid%20email%20profile"
+            f"redirect_uri={REDIRECT_URI}&scope=openid%20email%20profile&"
             f"access_type=offline&prompt=consent"
         )
     })
@@ -46,7 +47,7 @@ async def login_callback(code: str = Query(...)):
                 "client_secret": CLIENT_SECRET,
             },
         )
-    token_response_join = token_response.join()
+    token_response_join = token_response.json()
     if token_response.is_error:
         raise HTTPException(
             status_code=token_response.status_code,

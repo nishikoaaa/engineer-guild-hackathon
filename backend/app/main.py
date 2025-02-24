@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Date
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from typing import List, Optional
@@ -8,7 +10,7 @@ import datetime
 import os
 from typing import List, Optional
 from pydantic import BaseModel
-from .api.endpoints import auth
+from app.api.api import api_router
 
 # MySQLの接続情報（指定のDSNを利用）
 DATABASE_URL = "mysql+pymysql://user:password@db:3306/db?charset=utf8mb4"
@@ -27,7 +29,7 @@ class BlogPost(Base):
     __tablename__ = "article"
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
-    summary150 = Column(String(50), nullable=False)
+    summary150 = Column(String(200), nullable=False)
     summary1000 = Column(String(1000), nullable=False)
     content = Column(Text, nullable=False)
     url = Column(String(255), nullable=False)
@@ -42,6 +44,7 @@ class BlogPostSchema(BaseModel):
     id: int
     title: str
     summary150: str
+    summary150: str
     summary1000: str
     content: str
     url: str
@@ -54,7 +57,7 @@ class BlogPostSchema(BaseModel):
 # FastAPIアプリケーションの初期化
 app = FastAPI()
 
-app.include_router(auth.router)
+app.include_router(api_router)
 
 app_env = os.getenv("FASTAPI_ENV", "development")
 if app_env == "development":
@@ -85,7 +88,8 @@ def get_db():
 @app.get("/test", response_model=List[BlogPostSchema])
 def read_articles(db: Session = Depends(get_db)):
     posts = db.query(BlogPost).order_by(BlogPost.published_date.desc()).all()
-    return posts
+    posts_json = jsonable_encoder(posts)
+    return JSONResponse(content=posts_json, media_type="application/json; charset=utf-8")
 
 # # 新規投稿を作成するエンドポイント
 # @app.post("/posts", response_model=BlogPostSchema)
