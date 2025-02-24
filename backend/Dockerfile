@@ -3,6 +3,7 @@ FROM python:3.10
 
 RUN apt-get update && apt-get install -y locales locales-all
 ENV LANG en_US.UTF-8
+ENV PYTHONIOENCODING=utf-8
 
 # 作業ディレクトリ設定
 WORKDIR /app
