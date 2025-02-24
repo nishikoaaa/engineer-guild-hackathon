@@ -26,9 +26,6 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
-# ログイン機能できるまで仮で
-user_id = 1
-
 #############################################################
 # データベース関係
 
