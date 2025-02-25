@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
+import Welcome from './pages/Welcome';
 import TopPage from './pages/TopPage/TopPage';
 import { HelmetProvider } from "react-helmet-async";
 import WelcomePage from './pages/WelcomePage/WelcomePage';
@@ -10,7 +10,7 @@ const App: React.FC = () => {
     <HelmetProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Welcome />} />
           <Route path="/TopPage" element={<TopPage />} />
           <Route path="/WelcomePage" element={<WelcomePage />} />
         </Routes>
