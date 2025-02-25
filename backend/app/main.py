@@ -1,11 +1,18 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from langchain.schema import SystemMessage, HumanMessage, Document
+from langchain.chat_models import ChatOpenAI
 from pydantic import BaseModel, EmailStr
 import mysql.connector
 import datetime
 import json
 import os
+import faiss
+from openai import OpenAI
+import openai
+from dotenv import load_dotenv
+import numpy as np
 
 #############################################################
 # 初期設定
@@ -24,6 +31,19 @@ app.add_middleware(
     allow_credentials=allow_credentials,
     allow_methods=["GET", "POST", "OPTIONS", "DELETE", "PUT"],
     allow_headers=["Content-Type", "Authorization"],
+)
+
+load_dotenv()
+# 変数を取得
+key = os.getenv("OPENAI_API_KEY")
+openai = OpenAI(
+    api_key=key
+)
+
+llm = ChatOpenAI(
+    model_name="gpt-4o-mini-2024-07-18",
+    temperature=0,
+    openai_api_key=key
 )
 
 #############################################################
@@ -113,23 +133,86 @@ class ReadLogIn(BaseModel):
     user_id: int
     article_id: int
 
-# レコメンド用のモデル
-class Recommend(BaseModel):
+# Pydanticモデル（出力用）
+class RecommendArticle(BaseModel):
     id: int
+    title: str
+    summary150: str
+    summary1000: str
+    content: str
+    url: str
+    published_date: str
+    created_at: str
+
+# お気に入りのサイト登録用  
+class FavoriteSiteIn(BaseModel):
+    url: str
+
+# アンケート入力用のPydanticモデル
+class SurveyIn(BaseModel):
     userid: int
     age: int
-    gender: str      # ENUM で 'male', 'female', 'other' など
+    # gender は '男', '女', 'その他' のいずれかであることを前提
+    gender: str  
     job: str
     preferred_article_detail: str
-    created_at: str  # ISO形式の文字列
-    
 
 #############################################################
+
+# ユーザーごとにレコメンドするエンドポイント
+def read_articles():
+    """
+    DBから記事情報を取得して、各行の日時をISO形式に変換し、リスト(dict)で返す
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT id, title, summary150, summary1000, content, url, published_date, created_at "
+            "FROM article ORDER BY published_date DESC"
+        )
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Database query error: {err}")
+    
+    for row in rows:
+        if isinstance(row.get("created_at"), (datetime.date, datetime.datetime)):
+            row["created_at"] = row["created_at"].isoformat()
+        if isinstance(row.get("published_date"), (datetime.date, datetime.datetime)):
+            row["published_date"] = row["published_date"].isoformat()
+    return rows
+
+def get_embedding(text, model="text-embedding-ada-002"):
+    """
+    OpenAI APIを使って、テキストの埋め込みベクトルを取得
+    """
+    response = openai.embeddings.create(
+        input=text,
+        model=model
+    )
+    # response.data はリスト。最初のembeddingを返す
+    return response.data[0].embedding
+
+def search_articles(query_text, k=10):
+    """
+    query_textから埋め込みを生成し、FAISSインデックスから上位 k 件を返す
+    """
+    query_embedding = get_embedding(query_text)
+    query_np = np.array([query_embedding]).astype('float32')
+    # FAISSインデックスのファイルパス（事前に構築済みのものを読み込む）
+    index = faiss.read_index("/app/app/index_data/faiss_index.faiss")
+    distances, indices = index.search(query_np, k)
+    return distances[0], indices[0]
+
+#############################################################
+
 # ルート
 
 # 記事全取得テスト
 @app.get("/test", response_model=list[BlogPostSchema])
-def read_articles():
+def test():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -164,29 +247,56 @@ def register_account(account: AccountIn):
         media_type="application/json; charset=utf-8"
     )
 
-# ユーザーごとにレコメンドするエンドポイント
-@app.get("/recommend", response_model=list[Recommend])
-# def recommend(user_id: int = Query(..., description="ログインしているユーザーのID")):
-def reccomend():
-    user_id = 1 # ログイン機能実装したら変更
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        query = ("SELECT id, userid, age, gender, job, preferred_article_detail "
-                 "FROM survey WHERE userid = %s")
-        cursor.execute(query, (user_id,))
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
-    except mysql.connector.Error as err:
-        raise HTTPException(status_code=500, detail=f"Database query error: {err}")
+# /recommend エンドポイント
+# @app.get("/recommend", response_model=list[RecommendArticle])
+@app.get("/recommend", response_model=list[RecommendArticle])
+def recommend():
+    user_id = 1  # 仮定のユーザーID。実際は認証情報等から取得
     
-    # created_at を ISO 8601 形式に変換
-    for row in rows:
-        if isinstance(row.get("created_at"), (datetime.date, datetime.datetime)):
-            row["created_at"] = row["created_at"].isoformat()
+    # survey テーブルからユーザーの好みを取得する関数
+    def get_user_preference(user_id: int) -> str:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            query = "SELECT preferred_article_detail FROM survey WHERE userid = %s"
+            cursor.execute(query, (user_id,))
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            if row and row.get("preferred_article_detail"):
+                return row["preferred_article_detail"]
+            else:
+                raise HTTPException(status_code=404, detail="User survey data not found")
+        except mysql.connector.Error as err:
+            raise HTTPException(status_code=500, detail=f"Database query error: {err}")
+
+    # surveyテーブルから好みを取得
+    preferred_article_detail = get_user_preference(user_id)
+    print("ユーザーの好み:", preferred_article_detail)
     
-    return JSONResponse(content=rows, media_type="application/json; charset=utf-8")
+    # LLMに好みからジャンルキーワードのみ抽出させる
+    messages = [
+        SystemMessage(content="あなたは、ユーザーの好みの文章から関連するジャンルキーワードを抽出するアシスタントです。"),
+        HumanMessage(content=f"{preferred_article_detail}に関連するジャンルの単語のみを出力して。")
+    ]
+    llm_response = llm(messages)  # ここでLLMが応答
+    genre_keywords = llm_response.content.strip()  # 例: "技術, AI, IoT"
+    print("抽出されたジャンルキーワード:", genre_keywords)
+    
+    # FAISSで類似検索（上位10件）
+    distances, indices = search_articles(genre_keywords, k=10)
+    
+    # DBから全記事を取得
+    articles = read_articles()
+    
+    # FAISSのインデックスは記事リストのインデックスに対応していると仮定
+    recommended = []
+    for idx in indices:
+        if idx < len(articles):
+            recommended.append(articles[idx])
+    
+    print(f"推奨記事件数: {len(recommended)}")
+    return JSONResponse(content=recommended, media_type="application/json; charset=utf-8")
 
 # フロント開発用にダミーデータを返す関数
 @app.get("/TopPage", response_model=list[TopPageItem])
@@ -348,6 +458,7 @@ def top_page():
     ]
     return JSONResponse(content=dummy_data, media_type="application/json; charset=utf-8")
 
+# 既読エンドポンイト
 @app.post("/log_read")
 def log_read_event(log: ReadLogIn):
     inserted_id = insert_read_log(log.user_id, log.article_id)
@@ -355,6 +466,67 @@ def log_read_event(log: ReadLogIn):
         raise HTTPException(status_code=400, detail="Failed to insert read log")
     return JSONResponse(
         content={"message": "Read log recorded", "id": inserted_id},
+        media_type="application/json; charset=utf-8"
+    )
+
+# 興味のあるサイトをsource_urlテーブルに保存するエンドポイント
+@app.post("/regist_favorite_site")
+def regist_favorite_site_event(favorite: FavoriteSiteIn):
+    user_id = 1  # 例として固定のユーザーID（実際は認証等で取得）
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # まず、source_url テーブルに同じURLが存在するかチェック
+        select_query = "SELECT id FROM source_url WHERE url = %s"
+        cursor.execute(select_query, (favorite.url,))
+        result = cursor.fetchone()
+        if result:
+            source_id = result[0]
+        else:
+            # 存在しなければ、新規登録
+            insert_source = "INSERT INTO source_url (url) VALUES (%s)"
+            cursor.execute(insert_source, (favorite.url,))
+            conn.commit()
+            source_id = cursor.lastrowid
+
+        # 次に、favorite_sites テーブルに登録（ユーザーとsource_id の組み合わせ）
+        insert_favorite = "INSERT INTO favorite_sites (user_id, source_id) VALUES (%s, %s)"
+        cursor.execute(insert_favorite, (user_id, source_id))
+        conn.commit()
+        favorite_id = cursor.lastrowid
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return JSONResponse(
+        content={"message": "Favorite site registered", "favorite_id": favorite_id},
+        media_type="application/json; charset=utf-8"
+    )
+
+# アンケート登録エンドポイント
+@app.post("/regist_survey")
+def regist_survey(survey: SurveyIn):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = ("INSERT INTO survey (userid, age, gender, job, preferred_article_detail) "
+                 "VALUES (%s, %s, %s, %s, %s)")
+        values = (survey.userid, survey.age, survey.gender, survey.job, survey.preferred_article_detail)
+        cursor.execute(query, values)
+        conn.commit()
+        inserted_id = cursor.lastrowid
+    except mysql.connector.Error as err:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database insert error: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+    return JSONResponse(
+        content={"message": "Survey data registered", "id": inserted_id},
         media_type="application/json; charset=utf-8"
     )
 

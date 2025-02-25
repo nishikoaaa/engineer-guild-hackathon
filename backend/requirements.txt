@@ -44,3 +44,5 @@ pydantic[email]
 firecrawl
 langchain
 langgraph
+
+faiss-cpu

@@ -65,30 +65,46 @@ const TopPage: React.FC = () => {
   if (error) return <p className="error">エラー: {error}</p>;
 
   return (
-    <div className="toppage">
+    <div className="Background">
+      <ul className="circles">
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+                    <li></li>
+            </ul>
       <h1>TopPageです</h1>
       <div className="articles">
-        {articles.map((article) => (
-          <div key={article.id} className="article-card">
-            <h2 className="title">{article.title}</h2>
-            <p>{article.summary50}</p>
-            <p>
-              <a
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => handleLogRead(article.id)}
-              >
-                記事を読む
-              </a>
-            </p>
-            <p>
-              公開日: {new Date(article.published_date).toLocaleDateString()}
-            </p>
-          </div>
-        ))}
+          {articles.map((article) => (
+            <div key={article.id} className="article-card">
+              <p>
+                公開日: {new Date(article.published_date).toLocaleDateString()}
+              </p>
+              <div className="articlemain">
+                <h2 className="title">{article.title}</h2>
+                <div className="picture">syashinn</div>
+              </div>
+              <p>{article.summary50}</p>
+                <p>
+                  <a
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => handleLogRead(article.id)}
+                  >
+                    記事を読む
+                  </a>
+                </p>
+              
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
   );
 };
 
