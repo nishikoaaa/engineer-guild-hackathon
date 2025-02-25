@@ -19,13 +19,6 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, Date, DateT
 from sqlalchemy.orm import sessionmaker, declarative_base
 import datetime
 
-# ------------------------------
-# 環境変数の読み込み・API キー設定
-# ------------------------------
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "your_openai_api_key")
-FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "your_firecrawl_api_key")
-FirecrawlApp.api_key = FIRECRAWL_API_KEY
 
 # ------------------------------
 # MySQL の接続設定（適宜変更してください）
@@ -267,10 +260,6 @@ def loop_process_node(state: State, config) -> State:
 graph_builder = StateGraph(State)
 graph_builder.add_node("get_sitemap_node", get_sitemap_node)
 graph_builder.add_node("loop_process_node", loop_process_node)
-graph_builder.add_node("generate_article_info", generate_article_info)
-graph_builder.add_node("evaluate_article_info", evaluate_article_info)
-graph_builder.add_node("save_article_info", save_article_info)
-graph_builder.add_node("skip_article", skip_article)
 graph_builder.set_entry_point("get_sitemap_node")
 graph_builder.add_edge("get_sitemap_node", "loop_process_node")
 graph_builder.set_finish_point("loop_process_node")

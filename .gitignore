@@ -25,3 +25,4 @@ backend/app/article_index_storage/index_store.json
 backend/google_suggestion/generated_suggestions.json
 backend/scraped_links.txt
 backend/scraped_content.txt
+.env
