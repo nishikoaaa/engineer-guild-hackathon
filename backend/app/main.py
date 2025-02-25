@@ -46,6 +46,22 @@ def get_db_connection():
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Database connection error: {err}")
 
+# user_id取得
+def get_user_id(gmail: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = "SELECT id FROM account WHERE gmail = (%s)"
+        cursor.execute(query, (gmail,))
+        user_id = cursor.fetchone()
+        return user_id
+    except mysql.connector.Error as err:
+        print(f"Error getting user_id: {err}")
+        return -1
+    finally:
+        cursor.close()
+        conn.close()
+
 # gmail取得
 def get_gmail(user_id: int):
     conn = get_db_connection()
@@ -56,9 +72,8 @@ def get_gmail(user_id: int):
         account = cursor.fetchone()
         return account
     except mysql.connector.Error as err:
-        conn.rollback()
         print(f"Error getting gmail: {err}")
-        return None
+        return -1
     finally:
         cursor.close()
         conn.close()
