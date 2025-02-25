@@ -9,8 +9,8 @@ services:
       - "4000:4000"
     volumes:
       - ./backend:/app
-    # env_file:
-    #   - .env
+    env_file:
+      - .env
     environment:
       FASTAPI_ENV: development
       TZ: Asia/Tokyo

@@ -6,6 +6,7 @@ import json
 import re
 import faiss
 import os
+from dotenv import load_dotenv
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain.schema import SystemMessage, HumanMessage, Document
@@ -42,6 +43,22 @@ class BlogPostSchema(BaseModel):
     published_date: str  # 日付は文字列として扱います
     created_at: str
 
+# def read_articles():
+#     try:
+#         conn = get_db_connection()
+#         cursor = conn.cursor(dictionary=True)
+#         cursor.execute(
+#             "SELECT id, title, summary150, summary1000, content, url, published_date, created_at "
+#             "FROM article ORDER BY published_date DESC"
+#         )
+#         rows = cursor.fetchall()
+#         cursor.close()
+#         conn.close()
+#         print(rows)
+#     except mysql.connector.Error as err:
+#         raise HTTPException(status_code=500, detail=f"Database query error: {err}")
+
+# 記事データを取得して article_list に格納する関数
 def read_articles():
     try:
         conn = get_db_connection()
@@ -53,20 +70,36 @@ def read_articles():
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
-        print(rows)
+        
+        # データを article_list に格納
+        article_list = []
+        for row in rows:
+            article_list.append([
+                row["id"],
+                row["title"],
+                row["summary150"],
+                row["summary1000"],
+                row["content"],
+                row["url"],
+                row["published_date"],
+                row["created_at"]
+            ])
+        
+        print(f"{len(article_list)} 件の記事を取得しました。")
+        return article_list
     except mysql.connector.Error as err:
-        raise HTTPException(status_code=500, detail=f"Database query error: {err}")
+        raise Exception(f"Database query error: {err}")
 
-def load_api_key(secrets_file="key.json"):
-    with open(secrets_file) as f:
-        secrets = json.load(f)
-    return secrets["OPENAI_API_KEY"]
-    
-key = load_api_key()
+# .env ファイルを読み込む
+load_dotenv()
+# 変数を取得
+key = os.getenv("OPENAI_API_KEY")
     
 openai = OpenAI(
     api_key=key
 )
+# 記事データを取得
+article_list = read_articles()
 
 # OpenAI APIを用いてテキストをベクトル化する関数
 def get_embedding(text, model="text-embedding-ada-002"):
