@@ -46,6 +46,13 @@ def get_db_connection():
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Database connection error: {err}")
 
+# gmail取得
+def get_gmail(gmail: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = "SELECT id, gmail FROM "
+    
 # gmail挿入
 def insert_gmail(gmail: str):
     # データベース接続の取得
