@@ -47,7 +47,7 @@ CREATE TABLE survey (
     id INT AUTO_INCREMENT PRIMARY KEY,
     userid INT NOT NULL,
     age INT NOT NULL,
-    gender ENUM('male', 'female', 'other') NOT NULL,
+    gender ENUM('男', '女', 'その他') NOT NULL,
     job VARCHAR(100) NOT NULL,
     preferred_article_detail TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -58,8 +58,8 @@ ALTER TABLE survey CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- サンプルデータの挿入（useridはaccountのidに合わせる）
 INSERT INTO survey (userid, age, gender, job, preferred_article_detail) VALUES
-    (1, 25, 'male', 'エンジニア', '技術系の記事をもっと読みたい。特にAI関連に興味がある。'),
-    (2, 32, 'female', 'マーケティング', 'マーケティング戦略やSNSの最新トレンドについて知りたい。');
+    (1, 25, '男', 'エンジニア', '技術系の記事をもっと読みたい。特にAI関連に興味がある。'),
+    (2, 32, '女', 'マーケティング', 'マーケティング戦略やSNSの最新トレンドについて知りたい。');
 
 -- read_log テーブルの作成
 CREATE TABLE read_log (
