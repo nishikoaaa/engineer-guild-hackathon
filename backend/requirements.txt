@@ -41,3 +41,6 @@ webdriver_manager
 
 mysql-connector-python
 pydantic[email]
+firecrawl
+langchain
+langgraph
