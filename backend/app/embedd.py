@@ -19,6 +19,15 @@ from typing import List
 import mysql.connector
 from pydantic import BaseModel
 
+# .env ファイルを読み込む
+load_dotenv()
+# 変数を取得
+key = os.getenv("OPENAI_API_KEY")
+    
+openai = OpenAI(
+    api_key=key
+)
+
 def get_db_connection():
     try:
         conn = mysql.connector.connect(
@@ -42,21 +51,6 @@ class BlogPostSchema(BaseModel):
     url: str
     published_date: str  # 日付は文字列として扱います
     created_at: str
-
-# def read_articles():
-#     try:
-#         conn = get_db_connection()
-#         cursor = conn.cursor(dictionary=True)
-#         cursor.execute(
-#             "SELECT id, title, summary150, summary1000, content, url, published_date, created_at "
-#             "FROM article ORDER BY published_date DESC"
-#         )
-#         rows = cursor.fetchall()
-#         cursor.close()
-#         conn.close()
-#         print(rows)
-#     except mysql.connector.Error as err:
-#         raise HTTPException(status_code=500, detail=f"Database query error: {err}")
 
 # 記事データを取得して article_list に格納する関数
 def read_articles():
@@ -92,14 +86,6 @@ def read_articles():
     except mysql.connector.Error as err:
         raise Exception(f"Database query error: {err}")
 
-# .env ファイルを読み込む
-load_dotenv()
-# 変数を取得
-key = os.getenv("OPENAI_API_KEY")
-    
-openai = OpenAI(
-    api_key=key
-)
 # 記事データを取得
 article_list = read_articles()
 

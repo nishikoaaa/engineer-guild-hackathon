@@ -440,6 +440,7 @@ def top_page():
     ]
     return JSONResponse(content=dummy_data, media_type="application/json; charset=utf-8")
 
+# 既読エンドポンイト
 @app.post("/log_read")
 def log_read_event(log: ReadLogIn):
     inserted_id = insert_read_log(log.user_id, log.article_id)
