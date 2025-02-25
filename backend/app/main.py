@@ -51,7 +51,17 @@ def get_gmail(gmail: str):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        query = "SELECT id, gmail FROM "
+        query = "SELECT id, gmail FROM account WHERE gmail = (%s)"
+        cursor.execute(query, (gmail,))
+        account = cursor.fetchone()
+        return account
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Error getting gmail: {err}")
+        return None
+    finally:
+        cursor.close()
+        conn.close()
     
 # gmail挿入
 def insert_gmail(gmail: str):
