@@ -19,6 +19,15 @@ from typing import List
 import mysql.connector
 from pydantic import BaseModel
 
+# .env ファイルを読み込む
+load_dotenv()
+# 変数を取得
+key = os.getenv("OPENAI_API_KEY")
+    
+openai = OpenAI(
+    api_key=key
+)
+
 def get_db_connection():
     try:
         conn = mysql.connector.connect(
@@ -43,21 +52,6 @@ class BlogPostSchema(BaseModel):
     published_date: str  # 日付は文字列として扱います
     created_at: str
 
-# def read_articles():
-#     try:
-#         conn = get_db_connection()
-#         cursor = conn.cursor(dictionary=True)
-#         cursor.execute(
-#             "SELECT id, title, summary150, summary1000, content, url, published_date, created_at "
-#             "FROM article ORDER BY published_date DESC"
-#         )
-#         rows = cursor.fetchall()
-#         cursor.close()
-#         conn.close()
-#         print(rows)
-#     except mysql.connector.Error as err:
-#         raise HTTPException(status_code=500, detail=f"Database query error: {err}")
-
 # 記事データを取得して article_list に格納する関数
 def read_articles():
     try:
@@ -70,6 +64,8 @@ def read_articles():
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
+
+        print(f'rows: {rows}')
         
         # データを article_list に格納
         article_list = []
@@ -84,20 +80,12 @@ def read_articles():
                 row["published_date"],
                 row["created_at"]
             ])
-        
+        # print(f'article_list: {article_list}')
         print(f"{len(article_list)} 件の記事を取得しました。")
         return article_list
     except mysql.connector.Error as err:
         raise Exception(f"Database query error: {err}")
 
-# .env ファイルを読み込む
-load_dotenv()
-# 変数を取得
-key = os.getenv("OPENAI_API_KEY")
-    
-openai = OpenAI(
-    api_key=key
-)
 # 記事データを取得
 article_list = read_articles()
 
@@ -113,10 +101,10 @@ def get_embedding(text, model="text-embedding-ada-002"):
 # 各記事を1件ずつベクトル化する（例：記事タイトルと本文を連結）
 embeddings = []
 for article in article_list:
-    if article[1] is None or article[3] is None:
+    if article[1] is None or article[4] is None:
         print(f"Skipping article ID {article[0]} due to missing summary.")
         continue  # summary150 または summary1000 が None の場合、スキップ
-    text_to_embed = article[1] + "\n" + article[3]
+    text_to_embed = "タイトル：" + str(article[1]) + "\n" + "本文" + str(article[3])
     embedding = get_embedding(text_to_embed)
     embeddings.append(embedding)
 
