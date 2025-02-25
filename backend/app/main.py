@@ -212,8 +212,8 @@ def reccomend():
         except mysql.connector.Error as err:
             raise Exception(f"Database query error: {err}")
                         
-    def user_info(user_id=1):
-    #user_id = 1 # ログイン機能実装したら変更
+    def user_info():
+        user_id = 1 # ログイン機能実装したら変更
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
@@ -223,7 +223,7 @@ def reccomend():
             rows = cursor.fetchall()
             cursor.close()
             conn.close()
-            return str(rows["preferred_article_detail"])
+            return str(rows[0]["preferred_article_detail"]) 
         except mysql.connector.Error as err:
             raise HTTPException(status_code=500, detail=f"Database query error: {err}")
 
@@ -234,8 +234,15 @@ def reccomend():
         )
         # response["data"] はリストなので、最初のembeddingを返す
         return response.data[0].embedding
+    # # FAISS インデックスの保存場所
+    # index_path = os.path.abspath("index_data\faiss_index.faiss")
 
-    index = faiss.read_index("faiss_index.faiss")
+    # # インデックスファイルの存在を確認
+    # if not os.path.exists(index_path):
+    #     raise FileNotFoundError(f"FAISS index not found at {index_path}")
+
+    # index = faiss.read_index(index_path)
+    index = faiss.read_index("/app/app/index_data/faiss_index.faiss")
     print("FAISS インデックスを読み込みました。")
 
         # --- 後続の類似検索 ---

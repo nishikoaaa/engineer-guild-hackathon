@@ -113,6 +113,9 @@ def get_embedding(text, model="text-embedding-ada-002"):
 # 各記事を1件ずつベクトル化する（例：記事タイトルと本文を連結）
 embeddings = []
 for article in article_list:
+    if article[2] is None or article[3] is None:
+        print(f"Skipping article ID {article[0]} due to missing summary.")
+        continue  # summary150 または summary1000 が None の場合、スキップ
     text_to_embed = article[2] + "\n" + article[3]
     embedding = get_embedding(text_to_embed)
     embeddings.append(embedding)
@@ -126,6 +129,11 @@ index = faiss.IndexFlatL2(dim)
 index.add(embeddings_np)
 print("登録されたベクトル数:", index.ntotal)
 
+save_dir = os.path.abspath("index_data")  # 絶対パスを取得
+os.makedirs(save_dir, exist_ok=True)  # ディレクトリを作成（存在しない場合）
+
+index_path = os.path.join(save_dir, "faiss_index.faiss")
+
 # FAISS インデックスを保存
-faiss.write_index(index, "faiss_index.faiss")
-print("FAISS インデックスを保存しました。")
+faiss.write_index(index, index_path)
+print(f"FAISS インデックスをに保存しました。")
