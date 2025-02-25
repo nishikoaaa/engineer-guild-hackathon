@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
@@ -133,9 +133,21 @@ class ReadLogIn(BaseModel):
     user_id: int
     article_id: int
 
+# レコメンド用のモデル
+class Recommend(BaseModel):
+    id: int
+    userid: int
+    age: int
+    gender: str      # ENUM で 'male', 'female', 'other' など
+    job: str
+    preferred_article_detail: str
+    created_at: str  # ISO形式の文字列
+    
+
 #############################################################
 # ルート
 
+# 記事全取得テスト
 @app.get("/test", response_model=list[BlogPostSchema])
 def read_articles():
     try:
@@ -172,7 +184,29 @@ def register_account(account: AccountIn):
         media_type="application/json; charset=utf-8"
     )
 
-# 
+# ユーザーごとにレコメンドするエンドポイント
+@app.get("/recommend", response_model=list[Recommend])
+# def recommend(user_id: int = Query(..., description="ログインしているユーザーのID")):
+def reccomend():
+    user_id = 1 # ログイン機能実装したら変更
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = ("SELECT id, userid, age, gender, job, preferred_article_detail "
+                 "FROM survey WHERE userid = %s")
+        cursor.execute(query, (user_id,))
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Database query error: {err}")
+    
+    # created_at を ISO 8601 形式に変換
+    for row in rows:
+        if isinstance(row.get("created_at"), (datetime.date, datetime.datetime)):
+            row["created_at"] = row["created_at"].isoformat()
+    
+    return JSONResponse(content=rows, media_type="application/json; charset=utf-8")
 
 # フロント開発用にダミーデータを返す関数
 @app.get("/TopPage", response_model=list[TopPageItem])
