@@ -19,6 +19,14 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, Date, DateT
 from sqlalchemy.orm import sessionmaker, declarative_base
 import datetime
 
+# ------------------------------
+# 環境変数の読み込み・API キー設定
+# ------------------------------
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path)
+OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+FIRECRAWL_API_KEY = os.environ["FIRECRAWL_API_KEY"]
+FirecrawlApp.api_key = FIRECRAWL_API_KEY
 
 # ------------------------------
 # MySQL の接続設定（適宜変更してください）
