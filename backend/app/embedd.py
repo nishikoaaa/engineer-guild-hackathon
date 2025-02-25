@@ -70,6 +70,8 @@ def read_articles():
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
+
+        print(f'rows: {rows}')
         
         # データを article_list に格納
         article_list = []
@@ -84,7 +86,7 @@ def read_articles():
                 row["published_date"],
                 row["created_at"]
             ])
-        
+        # print(f'article_list: {article_list}')
         print(f"{len(article_list)} 件の記事を取得しました。")
         return article_list
     except mysql.connector.Error as err:
@@ -113,10 +115,10 @@ def get_embedding(text, model="text-embedding-ada-002"):
 # 各記事を1件ずつベクトル化する（例：記事タイトルと本文を連結）
 embeddings = []
 for article in article_list:
-    if article[1] is None or article[3] is None:
+    if article[1] is None or article[4] is None:
         print(f"Skipping article ID {article[0]} due to missing summary.")
         continue  # summary150 または summary1000 が None の場合、スキップ
-    text_to_embed = article[1] + "\n" + article[3]
+    text_to_embed = "タイトル：" + str(article[1]) + "\n" + "本文" + str(article[3])
     embedding = get_embedding(text_to_embed)
     embeddings.append(embedding)
 

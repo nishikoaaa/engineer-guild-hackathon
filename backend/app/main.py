@@ -133,26 +133,86 @@ class ReadLogIn(BaseModel):
     user_id: int
     article_id: int
 
-# レコメンド用のモデル
-class Recommend(BaseModel):
+# Pydanticモデル（出力用）
+class RecommendArticle(BaseModel):
     id: int
-    userid: int
-    age: int
-    gender: str      # ENUM で 'male', 'female', 'other' など
-    job: str
-    preferred_article_detail: str
-    created_at: str  # ISO形式の文字列
+    title: str
+    summary150: str
+    summary1000: str
+    content: str
+    url: str
+    published_date: str
+    created_at: str
 
 # お気に入りのサイト登録用  
 class FavoriteSiteIn(BaseModel):
     url: str
 
+# アンケート入力用のPydanticモデル
+class SurveyIn(BaseModel):
+    userid: int
+    age: int
+    # gender は '男', '女', 'その他' のいずれかであることを前提
+    gender: str  
+    job: str
+    preferred_article_detail: str
+
 #############################################################
+
+# ユーザーごとにレコメンドするエンドポイント
+def read_articles():
+    """
+    DBから記事情報を取得して、各行の日時をISO形式に変換し、リスト(dict)で返す
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT id, title, summary150, summary1000, content, url, published_date, created_at "
+            "FROM article ORDER BY published_date DESC"
+        )
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Database query error: {err}")
+    
+    for row in rows:
+        if isinstance(row.get("created_at"), (datetime.date, datetime.datetime)):
+            row["created_at"] = row["created_at"].isoformat()
+        if isinstance(row.get("published_date"), (datetime.date, datetime.datetime)):
+            row["published_date"] = row["published_date"].isoformat()
+    return rows
+
+def get_embedding(text, model="text-embedding-ada-002"):
+    """
+    OpenAI APIを使って、テキストの埋め込みベクトルを取得
+    """
+    response = openai.embeddings.create(
+        input=text,
+        model=model
+    )
+    # response.data はリスト。最初のembeddingを返す
+    return response.data[0].embedding
+
+def search_articles(query_text, k=10):
+    """
+    query_textから埋め込みを生成し、FAISSインデックスから上位 k 件を返す
+    """
+    query_embedding = get_embedding(query_text)
+    query_np = np.array([query_embedding]).astype('float32')
+    # FAISSインデックスのファイルパス（事前に構築済みのものを読み込む）
+    index = faiss.read_index("/app/app/index_data/faiss_index.faiss")
+    distances, indices = index.search(query_np, k)
+    return distances[0], indices[0]
+
+#############################################################
+
 # ルート
 
 # 記事全取得テスト
 @app.get("/test", response_model=list[BlogPostSchema])
-def read_articles():
+def test():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -187,159 +247,38 @@ def register_account(account: AccountIn):
         media_type="application/json; charset=utf-8"
     )
 
-# ユーザーごとにレコメンドするエンドポイント
-@app.get("/recommend", response_model=list[Recommend])
+# /recommend エンドポイント
+@app.get("/recommend", response_model=list[RecommendArticle])
 # def recommend(user_id: int = Query(..., description="ログインしているユーザーのID")):
-def reccomend():
-    def read_articles():
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute(
-                "SELECT id, title, summary150, summary1000, content, url, published_date, created_at "
-                "FROM article ORDER BY published_date DESC"
-            )
-            rows = cursor.fetchall()
-            cursor.close()
-            conn.close()
-            
-            # データを article_list に格納
-            article_list = []
-            for row in rows:
-                article_list.append([
-                    row["id"],
-                    row["title"],
-                    row["summary150"],
-                    row["summary1000"],
-                    row["content"],
-                    row["url"],
-                    row["published_date"],
-                    row["created_at"]
-                ])
-            
-            print(f"{len(article_list)} 件の記事を取得しました。")
-            return article_list
-        except mysql.connector.Error as err:
-            raise Exception(f"Database query error: {err}")
-                        
-    #def user_info():
-        user_id = 1 # ログイン機能実装したら変更
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-            query = ("SELECT id, userid, age, gender, job, preferred_article_detail "
-                    "FROM survey WHERE userid = %s")
-            cursor.execute(query, (user_id,))
-            rows = cursor.fetchall()
-            cursor.close()
-            conn.close()
-            return str(rows[0]["preferred_article_detail"]) 
-        except mysql.connector.Error as err:
-            raise HTTPException(status_code=500, detail=f"Database query error: {err}")
-
-    def get_embedding(text, model="text-embedding-ada-002"):
-        response = openai.embeddings.create(
-            input=text,
-            model=model
-        )
-        # response["data"] はリストなので、最初のembeddingを返す
-        return response.data[0].embedding
-    # # FAISS インデックスの保存場所
-    # index_path = os.path.abspath("index_data\faiss_index.faiss")
-
-    # # インデックスファイルの存在を確認
-    # if not os.path.exists(index_path):
-    #     raise FileNotFoundError(f"FAISS index not found at {index_path}")
-
-    # index = faiss.read_index(index_path)
-    index = faiss.read_index("/app/app/index_data/faiss_index.faiss")
-    print("FAISS インデックスを読み込みました。")
-
-        # --- 後続の類似検索 ---
-    def search_articles(query, k=1):
-        # クエリ文から埋め込みを生成
-        query_embedding = get_embedding(query)
-        query_np = np.array([query_embedding]).astype('float32')
-        
-        # FAISS インデックスで上位 k 件を検索（距離とインデックスが返る）
-        distances, indices = index.search(query_np, k)
-        return distances[0], indices[0]
-
-    # 検索例
-    #preferred_article_detail = user_info()
+def recommend():
+    user_id = 1
+    # ユーザーの好みを表す文章（実際は survey などから取得）
     preferred_article_detail = "技術系の記事をもっと読みたい。特にAI関連に興味がある。"
-    print(preferred_article_detail)
-    messages = [
-        SystemMessage(content="あなたはユーザー情報と記事リストを基に、ユーザーに適切な記事情報を提供するアシスタントです。"),
-        HumanMessage(content=f"{preferred_article_detail}に関連するジャンルの単語のみを出力して。")
-        ]
-
-    # メッセージをモデルに渡して応答を取得
-    response = llm(messages)
-    # 応答内容を表示
-    print(response.content)
-
-    #user_info = "トランプ大統領の支持率の最新情報が欲しい。"
-    #user_info = "iphoneについての最新情報が欲しい"
-    #user_info = ["  ", "  ", "iphoneについての最新情報が欲しい"]
-    distances, indices = search_articles(response.content, k=1)
-
-    # 記事データを取得して article_list に格納する関数
-    def read_articles():
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute(
-                "SELECT id, title, summary150, summary1000, content, url, published_date, created_at "
-                "FROM article ORDER BY published_date DESC"
-            )
-            rows = cursor.fetchall()
-            cursor.close()
-            conn.close()
-            
-            # データを article_list に格納
-            article_list = []
-            for row in rows:
-                article_list.append([
-                    row["id"],
-                    row["title"],
-                    row["summary150"],
-                    row["summary1000"],
-                    row["content"],
-                    row["url"],
-                    row["published_date"],
-                    row["created_at"]
-                ])
-            
-            print(f"{len(article_list)} 件の記事を取得しました。")
-            return article_list
-        except mysql.connector.Error as err:
-            raise Exception(f"Database query error: {err}")
-        
-    # 記事データを取得
-    article_list = read_articles()
-
-    print("類似検索結果:")
-    reccomend_articles = []
-    for d, idx in zip(distances, indices):
-        article = article_list[idx]
-        reccomend_articles.append({
-            "id": article[0],
-            "url": article[1],
-            "title": article[2],
-        })
-    # for d, idx in zip(distances, indices):
-    #     article_id = article_list[idx][0]
-    #     url = article_list[idx][1]
-    #     title = article_list[idx][2]
-    #     print(f"記事ID: {article_id}, タイトル: {title}, URL: {url}, 距離: {d}")
-    #     reccomend_articles = article_list
-    #     # created_at を ISO 8601 形式に変換
-        """for row in rows:
-            if isinstance(row.get("created_at"), (datetime.date, datetime.datetime)):
-            row["created_at"] = row["created_at"].isoformat()"""
+    print("ユーザーの好み:", preferred_article_detail)
     
-    return JSONResponse(content=reccomend_articles, media_type="application/json; charset=utf-8")
+    # LLMに好みからジャンルキーワードのみ抽出させる
+    messages = [
+        SystemMessage(content="あなたは、ユーザーの好みの文章から関連するジャンルキーワードを抽出するアシスタントです。"),
+        HumanMessage(content=f"{preferred_article_detail}に関連するジャンルの単語のみを出力して。")
+    ]
+    llm_response = llm(messages)  # ここでLLMが応答
+    genre_keywords = llm_response.content.strip()  # 例: "技術, AI, IoT"
+    print("抽出されたジャンルキーワード:", genre_keywords)
+    
+    # FAISSで類似検索（上位10件）
+    distances, indices = search_articles(genre_keywords, k=10)
+    
+    # DBから全記事を取得
+    articles = read_articles()
+    
+    # FAISSのインデックスは記事リストのインデックスに対応していると仮定
+    recommended = []
+    for idx in indices:
+        if idx < len(articles):
+            recommended.append(articles[idx])
+    
+    print(f"推奨記事件数: {len(recommended)}")
+    return JSONResponse(content=recommended, media_type="application/json; charset=utf-8")
 
 # フロント開発用にダミーデータを返す関数
 @app.get("/TopPage", response_model=list[TopPageItem])
@@ -546,6 +485,29 @@ def regist_favorite_site_event(favorite: FavoriteSiteIn):
 
     return JSONResponse(
         content={"message": "Favorite site registered", "favorite_id": favorite_id},
+        media_type="application/json; charset=utf-8"
+    )
+
+# アンケート登録エンドポイント
+@app.post("/regist_survey")
+def regist_survey(survey: SurveyIn):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = ("INSERT INTO survey (userid, age, gender, job, preferred_article_detail) "
+                 "VALUES (%s, %s, %s, %s, %s)")
+        values = (survey.userid, survey.age, survey.gender, survey.job, survey.preferred_article_detail)
+        cursor.execute(query, values)
+        conn.commit()
+        inserted_id = cursor.lastrowid
+    except mysql.connector.Error as err:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database insert error: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+    return JSONResponse(
+        content={"message": "Survey data registered", "id": inserted_id},
         media_type="application/json; charset=utf-8"
     )
 
