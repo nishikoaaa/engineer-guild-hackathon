@@ -69,3 +69,25 @@ CREATE TABLE read_log (
     read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_read_log_article FOREIGN KEY (article_id) REFERENCES article(id)
 );
+
+CREATE TABLE favorite_sites (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    url VARCHAR(255) NOT NULL,
+    CONSTRAINT fk_favorite_sites_account FOREIGN KEY (user_id) REFERENCES account(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE favorite_sites CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+INSERT INTO favorite_sites (user_id, url) VALUES
+    (1, 'https://www.google.com'),
+    (1, 'https://www.youtube.com'),
+    (2, 'https://www.twitter.com');
+
+CREATE TABLE retrieved_urls (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  url VARCHAR(255) NOT NULL,
+  retrieved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE favorite_sites CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
