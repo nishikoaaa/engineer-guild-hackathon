@@ -41,11 +41,8 @@ webdriver_manager
 
 mysql-connector-python
 pydantic[email]
-<<<<<<< HEAD
 
 PyJWT
-=======
 firecrawl
 langchain
 langgraph
->>>>>>> 534088b31d7b699d16eb7a2e00b4263e8b30d4fa
