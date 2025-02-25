@@ -248,12 +248,30 @@ def register_account(account: AccountIn):
     )
 
 # /recommend エンドポイント
+# @app.get("/recommend", response_model=list[RecommendArticle])
 @app.get("/recommend", response_model=list[RecommendArticle])
-# def recommend(user_id: int = Query(..., description="ログインしているユーザーのID")):
 def recommend():
-    user_id = 1
-    # ユーザーの好みを表す文章（実際は survey などから取得）
-    preferred_article_detail = "技術系の記事をもっと読みたい。特にAI関連に興味がある。"
+    user_id = 1  # 仮定のユーザーID。実際は認証情報等から取得
+    
+    # survey テーブルからユーザーの好みを取得する関数
+    def get_user_preference(user_id: int) -> str:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            query = "SELECT preferred_article_detail FROM survey WHERE userid = %s"
+            cursor.execute(query, (user_id,))
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            if row and row.get("preferred_article_detail"):
+                return row["preferred_article_detail"]
+            else:
+                raise HTTPException(status_code=404, detail="User survey data not found")
+        except mysql.connector.Error as err:
+            raise HTTPException(status_code=500, detail=f"Database query error: {err}")
+
+    # surveyテーブルから好みを取得
+    preferred_article_detail = get_user_preference(user_id)
     print("ユーザーの好み:", preferred_article_detail)
     
     # LLMに好みからジャンルキーワードのみ抽出させる
