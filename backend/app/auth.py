@@ -24,11 +24,21 @@ def create_session_id() -> str:
 
 # セッションを用いた検証
 async def get_current_user(session_id: str = Cookie(None)):
-    if session_id is None:
+    if session_id is None or get_session(session_id) is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated"
         )
+    else:
+        user_id = get_session(session_id)["user_id"]
+        user = get_gmail(usre_id)
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Cloud not validate credentials",
+            )
+        return user
+
 
 #############################################################
 router = APIRouter()
@@ -50,6 +60,29 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
     authorizationUrl=AUTHORIZATION_URL,
     tokenUrl=TOKEN_URL
 )
+
+#############################################################
+# データベース関係
+
+# セッションIDの取得
+def get_session(session_id: str, type: column):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = "SELECT * FROM session WHERE session_id = (%s)"
+        cursor.execute(query, (session_id,))
+        session = cursor.fetchone()
+        if session is None:
+            return 
+        else:
+            return session
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Error gettin session: {err}")
+        return None
+    finally:
+        cursor.close()
+        conn.close()
 
 #############################################################
 # ルート

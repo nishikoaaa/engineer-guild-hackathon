@@ -47,12 +47,12 @@ def get_db_connection():
         raise HTTPException(status_code=500, detail=f"Database connection error: {err}")
 
 # gmail取得
-def get_gmail(gmail: str):
+def get_gmail(user_id: int):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        query = "SELECT id, gmail FROM account WHERE gmail = (%s)"
-        cursor.execute(query, (gmail,))
+        query = "SELECT id, gmail FROM account WHERE user_id = (%s)"
+        cursor.execute(query, (user_id,))
         account = cursor.fetchone()
         return account
     except mysql.connector.Error as err:
