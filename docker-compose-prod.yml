@@ -38,8 +38,6 @@ services:
       - "4000:4000"
     volumes:
       - ./backend:/app
-    env_file:
-      - .env
     environment:
       FASTAPI_ENV: production
       TZ: Asia/Tokyo
