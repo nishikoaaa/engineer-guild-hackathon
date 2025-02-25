@@ -122,7 +122,10 @@ class Recommend(BaseModel):
     job: str
     preferred_article_detail: str
     created_at: str  # ISO形式の文字列
-    
+
+# お気に入りのサイト登録用  
+class FavoriteSiteIn(BaseModel):
+    url: str
 
 #############################################################
 # ルート
@@ -355,6 +358,44 @@ def log_read_event(log: ReadLogIn):
         raise HTTPException(status_code=400, detail="Failed to insert read log")
     return JSONResponse(
         content={"message": "Read log recorded", "id": inserted_id},
+        media_type="application/json; charset=utf-8"
+    )
+
+# 興味のあるサイトをsource_urlテーブルに保存するエンドポイント
+@app.post("/regist_favorite_site")
+def regist_favorite_site_event(favorite: FavoriteSiteIn):
+    user_id = 1  # 例として固定のユーザーID（実際は認証等で取得）
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # まず、source_url テーブルに同じURLが存在するかチェック
+        select_query = "SELECT id FROM source_url WHERE url = %s"
+        cursor.execute(select_query, (favorite.url,))
+        result = cursor.fetchone()
+        if result:
+            source_id = result[0]
+        else:
+            # 存在しなければ、新規登録
+            insert_source = "INSERT INTO source_url (url) VALUES (%s)"
+            cursor.execute(insert_source, (favorite.url,))
+            conn.commit()
+            source_id = cursor.lastrowid
+
+        # 次に、favorite_sites テーブルに登録（ユーザーとsource_id の組み合わせ）
+        insert_favorite = "INSERT INTO favorite_sites (user_id, source_id) VALUES (%s, %s)"
+        cursor.execute(insert_favorite, (user_id, source_id))
+        conn.commit()
+        favorite_id = cursor.lastrowid
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return JSONResponse(
+        content={"message": "Favorite site registered", "favorite_id": favorite_id},
         media_type="application/json; charset=utf-8"
     )
 
