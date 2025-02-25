@@ -29,8 +29,11 @@ ALTER TABLE article CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 -- session テーブルの作成
 CREATE TABLE session (
     session_id VARCHAR(64) NOT NULL UNIQUE
-    gmail VARCHAR(100) COLLATE
-)
+    gmail VARCHAR(100) COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
+    date DATETIME NOT NULL
+);
+
+ALTER TABLE session CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- サンプルデータの挿入
 INSERT INTO article (title, summary150, summary1000, content, url, published_date) VALUES
