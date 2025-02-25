@@ -18,13 +18,14 @@ const WelcomePage: React.FC = () => {
       }}
     >
       <h1 style={{ fontSize: "3rem", marginBottom: "1rem" }}>
-        Engineer Guild Hackathon
+        TechShift
       </h1>
       <p style={{ fontSize: "1.5rem", maxWidth: "800px", marginBottom: "2rem" }}>
-        ようこそ！このプラットフォームでは、最新の技術情報を共有し、エンジニア同士が繋がる場を提供します。<br />
-        AI、IoT、ブロックチェーンなど、先端技術に関する記事やアンケート、レコメンド機能を通じて、<br />
-        あなたの技術への情熱を刺激し、共に成長することを目指しています。
-      </p>
+        忙しい毎日を送るあなたへ――『情報ふるい』は、ネット上に散らばる最新技術ニュースや情報を自動で集約・要約し、<br />
+        あなたに本当に必要な情報だけを厳選してお届けする新感覚プラットフォームです。<br />
+        学生や社会人の情報収集の手間を大幅に軽減し、技術への情熱をさらに高めるための最適なツールとして、<br />
+        日々の学びと成長をサポートします。
+        </p>
       <button
         style={{
           padding: "1rem 2rem",
