@@ -19,6 +19,13 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, Date, DateT
 from sqlalchemy.orm import sessionmaker, declarative_base
 import datetime
 
+# ------------------------------
+# 環境変数の読み込み・API キー設定
+# ------------------------------
+load_dotenv()
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY")
+FirecrawlApp.api_key = FIRECRAWL_API_KEY
 
 # ------------------------------
 # MySQL の接続設定（適宜変更してください）
@@ -70,10 +77,13 @@ def get_sitemap_node(state: State, config) -> State:
     else:
         sitemap_urls = []
         print("サイトマップの取得に失敗しました。")
-    state["urls"] = sitemap_urls
+    # ".html" で終わるURLのみ抽出
+    filtered_urls = [url for url in sitemap_urls if url.endswith('.html')]
+    state["urls"] = filtered_urls
     state["current_url_index"] = 0
-    print(f"取得したURL数: {len(sitemap_urls)}")
+    print(f"取得した記事URL数: {len(filtered_urls)}")
     return state
+
 
 # ------------------------------
 # Node: LLM による記事情報の生成（1記事分）
