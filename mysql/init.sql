@@ -63,9 +63,9 @@ CREATE TABLE source_url (
 ALTER TABLE source_url CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 INSERT INTO source_url (url) VALUES
-    ('https://www.google.com'),
-    ('https://www.youtube.com'),
-    ('https://www.twitter.com');
+    ('https://www.gizmodo.jp'),
+    ('https://qiita.com'),
+    ('https://www3.nhk.or.jp/news');
 
 CREATE TABLE favorite_sites (
   id INT AUTO_INCREMENT PRIMARY KEY,
