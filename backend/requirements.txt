@@ -41,3 +41,5 @@ webdriver_manager
 
 mysql-connector-python
 pydantic[email]
+
+PyJWT

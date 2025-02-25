@@ -6,10 +6,13 @@ import mysql.connector
 import datetime
 import json
 import os
+from . import auth
 
 #############################################################
 # 初期設定
 app = FastAPI()
+
+app.include_router(auth.router)
 
 app_env = os.getenv("FASTAPI_ENV", "development")
 if app_env == "development":
@@ -25,9 +28,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS", "DELETE", "PUT"],
     allow_headers=["Content-Type", "Authorization"],
 )
-
-# ログイン機能できるまで仮で
-user_id = 1
 
 #############################################################
 # データベース関係
