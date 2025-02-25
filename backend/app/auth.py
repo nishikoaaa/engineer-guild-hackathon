@@ -1,35 +1,44 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Request, Depends, HTTPException, status, Query, Cookie
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 import httpx
 import os
-import base64
-import json
 import jwt
+import secrets
+
 
 #############################################################
 # 関数群
 
-# デコードしてemailを返す関数
+# JWTをデコードしてemailを返す
 def decode_email(tokenid):
     decode_payload = jwt.decode(tokenid, options={"verify_signature": False})
     return decode_payload.get("email")
 
+# セッションIDの生成
+def create_session_id() -> str:
+    session_id = secrets.token_hex(SESSION_ID_LENGTH)
+    return session_id
 
+# セッションを用いた検証
+async def get_current_user(session_id: str = Cookie(None)):
 
 #############################################################
 router = APIRouter()
 
 # 環境変数の読み込み
 load_dotenv()
+
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 REDIRECT_URI = os.getenv("REDIRECT_URI")
 AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-print("テスト")
-print(REDIRECT_URI)
 TOKEN_URL = "https://oauth2.googleapis.com/token"
+
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+SESSION_ID_LENGTH = 32
+
 
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
     authorizationUrl=AUTHORIZATION_URL,
