@@ -26,14 +26,14 @@ CREATE TABLE article (
 
 ALTER TABLE article CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- session テーブルの作成
-CREATE TABLE session (
-    session_id VARCHAR(64) NOT NULL UNIQUE
-    user_id INT NOT NULL UNIQUE,
+-- user_auth テーブルの作成
+CREATE TABLE user_auth (
+    user_auth_id VARCHAR(64) PRIMARY KEY NOT NULL UNIQUE,
+    user_id INT NOT NULL,
     date DATETIME NOT NULL
 );
 
-ALTER TABLE session CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE user_auth CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- survey テーブルの作成
 CREATE TABLE survey (

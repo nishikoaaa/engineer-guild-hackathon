@@ -19,7 +19,7 @@ import numpy as np
 # 初期設定
 app = FastAPI()
 
-app.include_router(auth.router)
+
 
 app_env = os.getenv("FASTAPI_ENV", "development")
 if app_env == "development":
@@ -87,7 +87,7 @@ def get_gmail(user_id: int):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        query = "SELECT id, gmail FROM account WHERE user_id = (%s)"
+        query = "SELECT id, gmail FROM account WHERE id = (%s)"
         cursor.execute(query, (user_id,))
         account = cursor.fetchone()
         return account
@@ -97,7 +97,7 @@ def get_gmail(user_id: int):
     finally:
         cursor.close()
         conn.close()
-    
+
 # gmail挿入
 def insert_gmail(gmail: str):
     # データベース接続の取得
@@ -201,14 +201,14 @@ def read_articles():
         print(rows)
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Database query error: {err}")
-    
+
     # 日付や日時オブジェクトがある場合、ISO形式に変換
     for row in rows:
         if isinstance(row.get("created_at"), (datetime.date, datetime.datetime)):
             row["created_at"] = row["created_at"].isoformat()
         if isinstance(row.get("published_date"), (datetime.date, datetime.datetime)):
             row["published_date"] = row["published_date"].isoformat()
-    
+
     return JSONResponse(content=rows, media_type="application/json; charset=utf-8")
 
 # アカウント登録エンドポイント（POSTリクエスト）
@@ -583,6 +583,8 @@ def regist_favorite_site_event(favorite: FavoriteSiteIn):
         content={"message": "Favorite site registered", "favorite_id": favorite_id},
         media_type="application/json; charset=utf-8"
     )
+
+app.include_router(auth.router)
 
 if __name__ == '__main__':
     import uvicorn

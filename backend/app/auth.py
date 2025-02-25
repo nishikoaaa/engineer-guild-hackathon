@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, status, Query, Cookie
 from fastapi.security import OAuth2AuthorizationCodeBearer
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import Response
 from dotenv import load_dotenv
 import httpx
 import os
 import jwt
 import secrets
-from .main import get_gmail
 from typing import Any
+from datetime import datetime, timedelta, timezone
+import mysql
 
 
 #############################################################
@@ -25,14 +26,15 @@ def create_session_id() -> str:
 
 # セッションを用いた検証
 async def get_current_user(session_id: str = Cookie(None)):
-    if session_id is None or not chekc_session(session_id):
+    from .main import get_gmail
+    if session_id is None or not get_session(session_id):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
+            detail=f"Not authenticated session_id: {get_session(session_id)}",
         )
     else:
         user_id = get_session(session_id)[1]
-        user = get_gmail(usr_id)
+        user = get_gmail(user_id)
         if user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -40,15 +42,6 @@ async def get_current_user(session_id: str = Cookie(None)):
             )
         return user
 
-# セッションの期限が切れているかどうか
-def check_session(session_id: str) -> bool:
-    session = get_session(session_id)
-    if not session:
-        return False
-    if session[2] < datetime.now(tz=timezone.utc):
-        return False
-    return True
-    
 
 #############################################################
 router = APIRouter()
@@ -62,7 +55,7 @@ REDIRECT_URI = os.getenv("REDIRECT_URI")
 AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 1
 SESSION_ID_LENGTH = 32
 
 
@@ -73,17 +66,17 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
 
 #############################################################
 # データベース関係
-
 # セッションの取得
 def get_session(session_id: str):
+    from .main import get_db_connection
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        query = "SELECT * FROM session WHERE session_id = (%s)"
+        query = "SELECT * FROM user_auth WHERE user_auth_id = (%s)"
         cursor.execute(query, (session_id,))
         session = cursor.fetchone()
         if session is None:
-            return 
+            return
         else:
             return session
     except mysql.connector.Error as err:
@@ -96,11 +89,12 @@ def get_session(session_id: str):
 
 # セッションの追加
 def add_session(session_id: str, user_id: int):
+    from .main import get_db_connection
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        query = "INSERT INTO session (session_id, user_id, date) VALUES (%s, %s, %s)"
-        expires_at = datetime.utcnow().replace(tzinfo=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        query = "INSERT INTO user_auth (user_auth_id, user_id, date) VALUES (%s, %s, %s)"
+        expires_at = (datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)).strftime('%Y-%m-%d %H:%M:%S')
         cursor.execute(query, (session_id, user_id, expires_at))
         conn.commit()
     except mysql.connector.Error as err:
@@ -122,7 +116,8 @@ async def login():
     return {"auth_url": auth_url}
 
 @router.get("/login/callback/")
-async def login_callback(code: str = Query(...)):
+async def login_callback(response: Response, code: str = Query(...)):
+    from .main import get_user_id, insert_gmail
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
             TOKEN_URL,
@@ -153,13 +148,13 @@ async def login_callback(code: str = Query(...)):
         )
     elif user_id is None:
         insert_gmail(gmail)
-        user_id = get_user_id(gmail)    
+        user_id = get_user_id(gmail)[0]
+    else:
+        user_id = user_id[0]
 
     session_id = create_session_id()
     add_session(session_id, user_id)
-    response.set_cookie()
 
-    response = Response()
     expires = datetime.now(tz=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     response.set_cookie(
         key="session_id",
@@ -170,6 +165,6 @@ async def login_callback(code: str = Query(...)):
 
     return gmail
 
-@router.get("/test")
+@router.get("/authtest")
 async def test(current_user: Any = Depends(get_current_user)):
     return {"user": current_user}
