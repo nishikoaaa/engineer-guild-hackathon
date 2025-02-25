@@ -46,3 +46,5 @@ PyJWT
 firecrawl
 langchain
 langgraph
+
+faiss-cpu
