@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from langchain.schema import SystemMessage, HumanMessage, Document
+from langchain.chat_models import ChatOpenAI
 from pydantic import BaseModel, EmailStr
 import mysql.connector
 import datetime
@@ -37,6 +38,12 @@ load_dotenv()
 key = os.getenv("OPENAI_API_KEY")
 openai = OpenAI(
     api_key=key
+)
+
+llm = ChatOpenAI(
+    model_name="gpt-4o-mini-2024-07-18",
+    temperature=0,
+    openai_api_key=key
 )
 
 #############################################################
@@ -212,7 +219,7 @@ def reccomend():
         except mysql.connector.Error as err:
             raise Exception(f"Database query error: {err}")
                         
-    def user_info():
+    #def user_info():
         user_id = 1 # ログイン機能実装したら変更
         try:
             conn = get_db_connection()
@@ -256,7 +263,8 @@ def reccomend():
         return distances[0], indices[0]
 
     # 検索例
-    preferred_article_detail = user_info()
+    #preferred_article_detail = user_info()
+    preferred_article_detail = "技術系の記事をもっと読みたい。特にAI関連に興味がある。"
     print(preferred_article_detail)
     messages = [
         SystemMessage(content="あなたはユーザー情報と記事リストを基に、ユーザーに適切な記事情報を提供するアシスタントです。"),
@@ -264,7 +272,7 @@ def reccomend():
         ]
 
     # メッセージをモデルに渡して応答を取得
-    response = openai(messages)
+    response = llm(messages)
     # 応答内容を表示
     print(response.content)
 
