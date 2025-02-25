@@ -19,10 +19,6 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, Date, DateT
 from sqlalchemy.orm import sessionmaker, declarative_base
 import datetime
 
-# ------------------------------
-# 環境変数の読み込み・API キー設定
-# ------------------------------
-
 
 # ------------------------------
 # MySQL の接続設定（適宜変更してください）
