@@ -182,9 +182,9 @@ def reccomend():
         raise HTTPException(status_code=500, detail=f"Database query error: {err}")
     
     # created_at を ISO 8601 形式に変換
-    for row in rows:
+    """for row in rows:
         if isinstance(row.get("created_at"), (datetime.date, datetime.datetime)):
-            row["created_at"] = row["created_at"].isoformat()
+            row["created_at"] = row["created_at"].isoformat()"""
     
     return JSONResponse(content=rows, media_type="application/json; charset=utf-8")
 
