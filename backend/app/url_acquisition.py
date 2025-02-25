@@ -1,23 +1,11 @@
 import os
-import re
-import json
 import datetime
-import requests
-from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from firecrawl import FirecrawlApp
-# LangChain のインポート（ChatOpenAI, プロンプト用）
-from langchain_community.chat_models import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from langchain.schema import SystemMessage
-from langgraph.graph import StateGraph
-from typing import List, Dict
-from typing_extensions import TypedDict
-
 # SQLAlchemy のインポート（MySQL 接続用）
-from sqlalchemy import create_engine, Column, Integer, String, Text, Date, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base
-import datetime
+from typing import List, Dict
 
 # ------------------------------
 # 環境変数の読み込み・API キー設定
@@ -36,43 +24,75 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # ------------------------------
+# モデル定義: source_url テーブル
+# ------------------------------
+class SourceURL(Base):
+    __tablename__ = "source_url"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    url = Column(String(255), nullable=False, unique=True)
+
+# ------------------------------
 # モデル定義: retrieved_urls テーブル
 # ------------------------------
 class RetrievedURL(Base):
     __tablename__ = "retrieved_urls"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    url = Column(String(255), nullable=False, unique=True)
+    source_id = Column(Integer, ForeignKey("source_url.id"), nullable=False)
+    retrieved_url = Column(String(255), nullable=False, unique=True)
     retrieved_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-# テーブル作成（存在しなければ作成）
+# テーブル作成（存在しなければ）
 Base.metadata.create_all(bind=engine)
 
 # ------------------------------
-# URL 取得関数（Firecrawl を用いる）
+# 関数: source_url テーブルからプラットフォームURLとIDを辞書型で取得 {id: url}
+# ------------------------------
+def get_source_url_dict() -> Dict[int, str]:
+    session = SessionLocal()
+    records = session.query(SourceURL).all()
+    session.close()
+    url_dict = {record.id: record.url for record in records}
+    return url_dict
+
+# ------------------------------
+# 関数: プラットフォームのサイトマップから全URLを取得（Firecrawl を使用）
 # ------------------------------
 def retrieve_urls_from_platform(platform_url: str) -> List[str]:
     app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
-    result = app.map_url(platform_url, params={"sitemapOnly": True,'includeSubdomains': True})
+    # まずは sitemapOnly=True で取得
+    result = app.map_url(platform_url, params={"sitemapOnly": True, "includeSubdomains": True})
     if result.get("success"):
         urls = result.get("links", [])
     else:
         print("サイトマップの取得に失敗しました。")
         urls = []
+    # 取得件数が100件未満の場合、sitemapOnly=Falseで再取得
+    if len(urls) < 100:
+        print(f"取得したURL数が {len(urls)} 件と少ないため、sitemapOnly=False にて再取得します。")
+        result = app.map_url(platform_url, params={"sitemapOnly": False, "includeSubdomains": True})
+        if result.get("success"):
+            urls = result.get("links", [])
+        else:
+            print("sitemapOnly=False による再取得にも失敗しました。")
+            urls = []
     return urls
 
+
 # ------------------------------
-# 新規 URL をデータベースに登録する関数
+# 関数: 新規のURLのみをデータベースに登録する
 # ------------------------------
-def insert_new_urls(platform_url: str):
+def insert_new_urls_for_platform(source_id: int, platform_url: str):
     # Firecrawl を用いてサイトマップからURL一覧を取得
     retrieved_urls = retrieve_urls_from_platform(platform_url)
+    # 重複しているURLを除去（全件に対して）
+    retrieved_urls = list(set(retrieved_urls))
     db = SessionLocal()
-    # 既に登録されているURLをセットで取得
-    existing_urls = {record.url for record in db.query(RetrievedURL).all()}
-    # 新規のURLのみ抽出
+    # 既に登録されているURL（対象の source_id で登録済み）の集合を取得
+    existing_urls = {record.retrieved_url for record in db.query(RetrievedURL).filter(RetrievedURL.source_id == source_id).all()}
+    # 新規のURLのみ抽出（既に登録されているURLが含まれていなければ）
     new_urls = [url for url in retrieved_urls if url not in existing_urls]
     for url in new_urls:
-        new_record = RetrievedURL(url=url)
+        new_record = RetrievedURL(source_id=source_id, retrieved_url=url)
         db.add(new_record)
     db.commit()
     db.close()
@@ -80,8 +100,11 @@ def insert_new_urls(platform_url: str):
     print("新規URLの登録が完了しました。")
 
 # ------------------------------
-# メイン処理
+# メイン処理: 各プラットフォームの新規URLを登録する
 # ------------------------------
 if __name__ == "__main__":
-    platform_url = input("プラットフォームのURLを入力してください: ").strip()
-    insert_new_urls(platform_url)
+    # source_url テーブルから {id: url} の辞書を取得
+    source_url_dict = get_source_url_dict()
+    for source_id, platform_url in source_url_dict.items():
+        print(f"処理中のプラットフォームID: {source_id}, URL: {platform_url}")
+        insert_new_urls_for_platform(source_id, platform_url)
