@@ -8,6 +8,7 @@ import mysql.connector
 import datetime
 import json
 import os
+from . import auth
 import faiss
 from openai import OpenAI
 import openai
@@ -17,6 +18,8 @@ import numpy as np
 #############################################################
 # 初期設定
 app = FastAPI()
+
+
 
 app_env = os.getenv("FASTAPI_ENV", "development")
 if app_env == "development":
@@ -62,6 +65,38 @@ def get_db_connection():
         return conn
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Database connection error: {err}")
+
+# user_id取得
+def get_user_id(gmail: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = "SELECT id FROM account WHERE gmail = (%s)"
+        cursor.execute(query, (gmail,))
+        user_id = cursor.fetchone()
+        return user_id
+    except mysql.connector.Error as err:
+        print(f"Error getting user_id: {err}")
+        return -1
+    finally:
+        cursor.close()
+        conn.close()
+
+# gmail取得
+def get_gmail(user_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = "SELECT id, gmail FROM account WHERE id = (%s)"
+        cursor.execute(query, (user_id,))
+        account = cursor.fetchone()
+        return account
+    except mysql.connector.Error as err:
+        print(f"Error getting gmail: {err}")
+        return -1
+    finally:
+        cursor.close()
+        conn.close()
 
 # gmail挿入
 def insert_gmail(gmail: str):
@@ -226,14 +261,14 @@ def test():
         print(rows)
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Database query error: {err}")
-    
+
     # 日付や日時オブジェクトがある場合、ISO形式に変換
     for row in rows:
         if isinstance(row.get("created_at"), (datetime.date, datetime.datetime)):
             row["created_at"] = row["created_at"].isoformat()
         if isinstance(row.get("published_date"), (datetime.date, datetime.datetime)):
             row["published_date"] = row["published_date"].isoformat()
-    
+
     return JSONResponse(content=rows, media_type="application/json; charset=utf-8")
 
 # アカウント登録エンドポイント（POSTリクエスト）
@@ -529,6 +564,8 @@ def regist_survey(survey: SurveyIn):
         content={"message": "Survey data registered", "id": inserted_id},
         media_type="application/json; charset=utf-8"
     )
+
+app.include_router(auth.router)
 
 if __name__ == '__main__':
     import uvicorn
