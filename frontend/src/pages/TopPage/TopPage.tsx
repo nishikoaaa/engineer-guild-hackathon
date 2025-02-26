@@ -25,7 +25,12 @@ const TopPage: React.FC = () => {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const response = await fetch(API_URL);
+        const response = await fetch(API_URL, {
+          method: "GET",
+          credentials: "include",
+          redirect: "follow",
+          mode: "cors",
+        });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -48,6 +53,9 @@ const TopPage: React.FC = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: 1, article_id: articleId }),
+        credentials: "include",
+        redirect: "follow",
+        mode: "cors",
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
