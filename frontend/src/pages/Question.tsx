@@ -3,8 +3,13 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 const QuestionPage: React.FC = () => {
 
-  const [formData, setFormData] = useState({
-    age: "",
+  const [formData, setFormData] = useState<{
+    age:number | 0;
+    job: string;
+    gender: string;
+    comment: string;
+  }>({
+    age: 0,
     job: "",
     gender: "",
     comment: "",
@@ -13,6 +18,7 @@ const QuestionPage: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
+  const [resultMessage, setResultMessage] = useState(""); 
 
   const options = ["男性", "女性", "その他"];
 
@@ -21,7 +27,7 @@ const QuestionPage: React.FC = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "age" ? parseInt(value, 10) || 0 : value,
     }));
 
     // 入力時にエラーメッセージをクリア
@@ -32,35 +38,53 @@ const QuestionPage: React.FC = () => {
   };
 
   // 送信時の処理（バリデーションチェック）
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     const newErrors: { [key: string]: string } = {};
     if (!formData.age) newErrors.age = "年齢を入力してください";
     if (!formData.job) newErrors.job = "職業を入力してください";
     if (!formData.gender) newErrors.gender = "性別を選択してください";
     if (!formData.comment) newErrors.comment = "閲覧したい記事について入力してください";
-
+  
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-
+  
     setLoading(true);
-
+  
     const sendData = {
-      userid: 0,
-      age: parseInt(formData.age, 10),
+      userid: 1, // ユーザーIDは固定（または適宜変更）
+      age: formData.age,
       gender: formData.gender,
       job: formData.job,
       preferred_article_detail: formData.comment,
     };
-
-    console.log("送信データ:", sendData);
-    setErrors({});
-    setSubmitted(true);
+  
+    try {
+      const response = await fetch("http://localhost:4000/regist_survey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sendData),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      console.log("登録成功:", await response.json());
+      setResultMessage("送信が完了しました");
+      setFormData({ age: 0, job: "", gender: "", comment: "" }); // フォームリセット
+      setSubmitted(true); // 送信完了画面を表示
+  
+    } catch (err: any) {
+      console.error("送信エラー:", err.message);
+      setResultMessage("送信できませんでした");
+    } finally {
+      setLoading(false);
+    }
   };
-
   return (
     <section className="background"
     style={{
