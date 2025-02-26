@@ -21,8 +21,10 @@ def decode_email(tokenid):
 
 # セッションIDの生成
 def create_session_id() -> str:
-    session_id = secrets.token_hex(SESSION_ID_LENGTH)
-    return session_id
+    while True:
+        session_id = secrets.token_hex(SESSION_ID_LENGTH)
+        if not get_session(session_id):
+            return session_id
 
 # セッションを用いた検証
 async def get_current_user(session_id: str = Cookie(None)):
