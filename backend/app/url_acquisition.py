@@ -6,6 +6,7 @@ from firecrawl import FirecrawlApp
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base
 from typing import List, Dict
+import subprocess
 
 # ------------------------------
 # 環境変数の読み込み・API キー設定
@@ -77,19 +78,18 @@ def retrieve_urls_from_platform(platform_url: str) -> List[str]:
             urls = []
     return urls
 
-
 # ------------------------------
 # 関数: 新規のURLのみをデータベースに登録する
 # ------------------------------
-def insert_new_urls_for_platform(source_id: int, platform_url: str):
+def insert_new_urls_for_platform(source_id: int, platform_url: str) -> List[str]:
     # Firecrawl を用いてサイトマップからURL一覧を取得
     retrieved_urls = retrieve_urls_from_platform(platform_url)
-    # 重複しているURLを除去（全件に対して）
+    # 重複しているURLを除去
     retrieved_urls = list(set(retrieved_urls))
     db = SessionLocal()
     # 既に登録されているURL（対象の source_id で登録済み）の集合を取得
     existing_urls = {record.retrieved_url for record in db.query(RetrievedURL).filter(RetrievedURL.source_id == source_id).all()}
-    # 新規のURLのみ抽出（既に登録されているURLが含まれていなければ）
+    # 新規のURLのみ抽出
     new_urls = [url for url in retrieved_urls if url not in existing_urls]
     for url in new_urls:
         new_record = RetrievedURL(source_id=source_id, retrieved_url=url)
@@ -98,13 +98,23 @@ def insert_new_urls_for_platform(source_id: int, platform_url: str):
     db.close()
     print(f"新規URL数: {len(new_urls)}")
     print("新規URLの登録が完了しました。")
+    return new_urls
 
 # ------------------------------
-# メイン処理: 各プラットフォームの新規URLを登録する
+# メイン処理: 各プラットフォームの新規URLを登録し、それぞれのURLに対して web_Acquisition.py を実行する
 # ------------------------------
-if __name__ == "__main__":
-    # source_url テーブルから {id: url} の辞書を取得
+def main():
     source_url_dict = get_source_url_dict()
     for source_id, platform_url in source_url_dict.items():
         print(f"処理中のプラットフォームID: {source_id}, URL: {platform_url}")
-        insert_new_urls_for_platform(source_id, platform_url)
+        new_urls = insert_new_urls_for_platform(source_id, platform_url)
+        total_new = len(new_urls)
+        print(f"このプラットフォームで新規記事URLは {total_new} 件です。")
+        for idx, article_url in enumerate(new_urls, start=1):
+            remaining = total_new - idx
+            print(f"【進捗】{idx} 件目の記事URLを処理中。残り未実行URL数: {remaining} 件")
+            subprocess.run(["python", "web_Acquisition.py", article_url])
+
+if __name__ == "__main__":
+    main()
+    print("処理完了しました")

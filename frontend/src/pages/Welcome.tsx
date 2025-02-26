@@ -9,7 +9,6 @@ const WelcomePage: React.FC = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      // /login エンドポイントは { auth_url: "https://accounts.google.com/..." } の形式で返す前提
       window.location.href = data.auth_url;
     } catch (error) {
       console.error("ログインURL取得エラー:", error);

@@ -244,17 +244,14 @@ def search_articles(query_text, k=10):
     """
     query_textから埋め込みを生成し、FAISSインデックスから上位 k 件を返す
     """
-    #query_embedding = get_combined_embedding(query_text)
     query_embedding = get_embedding(query_text)
     query_np = np.array([query_embedding]).astype('float32')
-    #query_np /= np.linalg.norm(query_np)
     # FAISSインデックスのファイルパス（事前に構築済みのものを読み込む）
     index = faiss.read_index("/app/app/index_data/faiss_index.faiss")
     distances, indices = index.search(query_np, k)
     return distances[0], indices[0]
 
 #############################################################
-
 # ルート
 
 # 記事全取得テスト
@@ -352,7 +349,6 @@ def top_page(current_user: Any = Depends(auth.get_current_user)):
     if not current_user:
         print("ユーザーの取得に失敗しました")
         raise HTTPException(status_code=401, detail="Not authenticated")
-        # return auth.to_login()
     dummy_data = [
         {
             "id": 0,
