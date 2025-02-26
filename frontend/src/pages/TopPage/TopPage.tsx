@@ -1,5 +1,7 @@
+// TopPage.tsx
 import React, { useEffect, useState } from "react";
 import "./TopPage.css";
+import RegisterSiteButton from "../../components/RegisterSiteButton"; // パスは実際のファイル位置に合わせて変更
 
 interface Article {
   id: number;
@@ -14,9 +16,6 @@ interface Article {
 
 const API_URL = "http://localhost:4000/TopPage";
 const LOG_API_URL = "http://localhost:4000/log_read";
-
-// 固定のユーザーID（本来は認証情報等から取得）
-const userId = 1;
 
 const TopPage: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -42,15 +41,13 @@ const TopPage: React.FC = () => {
     fetchArticles();
   }, []);
 
-  // 記事クリック時にログ登録APIにPOSTリクエストを送る
+  // 記事クリック時のログ登録処理
   const handleLogRead = async (articleId: number) => {
     try {
       const response = await fetch(LOG_API_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ user_id: userId, article_id: articleId })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: 1, article_id: articleId }),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -67,44 +64,43 @@ const TopPage: React.FC = () => {
   return (
     <div className="Background">
       <ul className="circles">
-                    <li></li>
-                    <li></li>
-                    <li></li>
-                    <li></li>
-                    <li></li>
-                    <li></li>
-                    <li></li>
-                    <li></li>
-                    <li></li>
-                    <li></li>
-            </ul>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+      </ul>
       <h1>TopPageです</h1>
       <div className="articles">
-          {articles.map((article) => (
-            <div key={article.id} className="article-card">
-              <p>
-                公開日: {new Date(article.published_date).toLocaleDateString()}
-              </p>
-              <div className="articlemain">
-                <h2 className="title">{article.title}</h2>
-                <div className="picture">syashinn</div>
-              </div>
-              <p>{article.summary50}</p>
-                <p>
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => handleLogRead(article.id)}
-                  >
-                    記事を読む
-                  </a>
-                </p>
-              
+        {articles.map((article) => (
+          <div key={article.id} className="article-card">
+            <p>公開日: {new Date(article.published_date).toLocaleDateString()}</p>
+            <div className="articlemain">
+              <h2 className="title">{article.title}</h2>
+              <div className="picture">syashinn</div>
             </div>
-          ))}
-        </div>
+            <p>{article.summary50}</p>
+            <p>
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => handleLogRead(article.id)}
+              >
+                記事を読む
+              </a>
+            </p>
+          </div>
+        ))}
       </div>
+      {/* 右上にサイト登録用フォームコンポーネントを表示 */}
+      <RegisterSiteButton />
+    </div>
   );
 };
 

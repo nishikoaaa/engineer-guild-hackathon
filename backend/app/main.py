@@ -232,12 +232,22 @@ def get_embedding(text, model="text-embedding-ada-002"):
     # response.data はリスト。最初のembeddingを返す
     return response.data[0].embedding
 
+def get_combined_embedding(keywords):
+    """
+    与えられた複数のキーワードの埋め込みを取得し、平均化して一つの埋め込みベクトルを作成する
+    """
+    embeddings = [get_embedding(keyword) for keyword in keywords]
+    combined_embedding = np.mean(embeddings, axis=0)  # 平均をとる
+    return combined_embedding.astype('float32')
+
 def search_articles(query_text, k=10):
     """
     query_textから埋め込みを生成し、FAISSインデックスから上位 k 件を返す
     """
+    #query_embedding = get_combined_embedding(query_text)
     query_embedding = get_embedding(query_text)
     query_np = np.array([query_embedding]).astype('float32')
+    #query_np /= np.linalg.norm(query_np)
     # FAISSインデックスのファイルパス（事前に構築済みのものを読み込む）
     index = faiss.read_index("/app/app/index_data/faiss_index.faiss")
     distances, indices = index.search(query_np, k)
@@ -285,7 +295,6 @@ def register_account(account: AccountIn):
     )
 
 # /recommend エンドポイント
-# @app.get("/recommend", response_model=list[RecommendArticle])
 @app.get("/recommend", response_model=list[RecommendArticle])
 def recommend():
     user_id = 1  # 仮定のユーザーID。実際は認証情報等から取得
@@ -319,6 +328,7 @@ def recommend():
     llm_response = llm(messages)  # ここでLLMが応答
     genre_keywords = llm_response.content.strip()  # 例: "技術, AI, IoT"
     print("抽出されたジャンルキーワード:", genre_keywords)
+    print(type(genre_keywords))
     
     # FAISSで類似検索（上位10件）
     distances, indices = search_articles(genre_keywords, k=10)
