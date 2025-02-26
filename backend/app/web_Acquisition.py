@@ -102,6 +102,7 @@ def generate_basic_info_node(state: State, config) -> State:
         SystemMessage(
             content=(
                 "以下の文章から、記事のタイトル、150文字程度の要約、公開日時を抽出してください。"
+                "150程度の要約文は150字程度で確実に書かれているかを確認するため、プログラムで150字程度になっているかカウントしてください"
                 "出力はJSON形式で、キーは 'title', 'summary', 'published_date' としてください。"
                 "例: {"
                 "\"title\": \"サンプルタイトル\", "

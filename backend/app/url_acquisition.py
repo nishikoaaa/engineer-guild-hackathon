@@ -110,10 +110,13 @@ def main():
         new_urls = insert_new_urls_for_platform(source_id, platform_url)
         total_new = len(new_urls)
         print(f"このプラットフォームで新規記事URLは {total_new} 件です。")
+        
         for idx, article_url in enumerate(new_urls, start=1):
             remaining = total_new - idx
             print(f"【進捗】{idx} 件目の記事URLを処理中。残り未実行URL数: {remaining} 件")
             subprocess.run(["python", "web_Acquisition.py", article_url])
+            if idx >= 30:
+                break
 
 if __name__ == "__main__":
     main()
