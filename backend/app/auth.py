@@ -146,7 +146,7 @@ async def login_callback(code: str = Query(...)):
         )
     # トークンからgmailをデコード
     gmail = decode_email(token_response_json["id_token"])
-    
+
     # accountテーブルに gmail が存在するか確認
     account_record = get_user_id(gmail)
     if account_record is None:
@@ -166,13 +166,13 @@ async def login_callback(code: str = Query(...)):
             )
     # get_user_id() の戻り値はタプルで返っていると仮定（例: (user_id, )）
     user_id = account_record[0]
-    
+
     # セッションIDの生成と user_auth への登録
     session_id = create_session_id()
     add_session(session_id, user_id)
 
     response = RedirectResponse(url=redirect_url)
-    
+
     # クッキーにセッションIDを設定（有効期限はACCESS_TOKEN_EXPIRE_MINUTES分）
     expires = datetime.now(tz=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     response.set_cookie(
@@ -184,6 +184,7 @@ async def login_callback(code: str = Query(...)):
 
     return response
 
+#　テスト用のルート
 @router.get("/authtest")
 async def test(current_user: Any = Depends(get_current_user)):
     if not current_user:
