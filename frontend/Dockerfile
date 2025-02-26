@@ -8,6 +8,8 @@ COPY package.json yarn.lock ./
 # 依存関係をインストール
 RUN yarn install
 
+RUN yarn add bootstrap
+
 # アプリケーションコードをコピー
 COPY . .
 

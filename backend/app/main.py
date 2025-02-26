@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends, Cookie
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from langchain.schema import SystemMessage, HumanMessage, Document
@@ -14,16 +14,18 @@ from openai import OpenAI
 import openai
 from dotenv import load_dotenv
 import numpy as np
+from typing import Any
+# from .auth import get_current_user, to_login, get_session
 
 #############################################################
 # 初期設定
 app = FastAPI()
 
-
+app.include_router(auth.router)
 
 app_env = os.getenv("FASTAPI_ENV", "development")
 if app_env == "development":
-    allow_credentials = False
+    allow_credentials = True
     origins = ["http://localhost:3000"]
 else:
     pass
@@ -230,12 +232,22 @@ def get_embedding(text, model="text-embedding-ada-002"):
     # response.data はリスト。最初のembeddingを返す
     return response.data[0].embedding
 
+def get_combined_embedding(keywords):
+    """
+    与えられた複数のキーワードの埋め込みを取得し、平均化して一つの埋め込みベクトルを作成する
+    """
+    embeddings = [get_embedding(keyword) for keyword in keywords]
+    combined_embedding = np.mean(embeddings, axis=0)  # 平均をとる
+    return combined_embedding.astype('float32')
+
 def search_articles(query_text, k=10):
     """
     query_textから埋め込みを生成し、FAISSインデックスから上位 k 件を返す
     """
+    #query_embedding = get_combined_embedding(query_text)
     query_embedding = get_embedding(query_text)
     query_np = np.array([query_embedding]).astype('float32')
+    #query_np /= np.linalg.norm(query_np)
     # FAISSインデックスのファイルパス（事前に構築済みのものを読み込む）
     index = faiss.read_index("/app/app/index_data/faiss_index.faiss")
     distances, indices = index.search(query_np, k)
@@ -283,7 +295,6 @@ def register_account(account: AccountIn):
     )
 
 # /recommend エンドポイント
-# @app.get("/recommend", response_model=list[RecommendArticle])
 @app.get("/recommend", response_model=list[RecommendArticle])
 def recommend():
     user_id = 1  # 仮定のユーザーID。実際は認証情報等から取得
@@ -317,6 +328,7 @@ def recommend():
     llm_response = llm(messages)  # ここでLLMが応答
     genre_keywords = llm_response.content.strip()  # 例: "技術, AI, IoT"
     print("抽出されたジャンルキーワード:", genre_keywords)
+    print(type(genre_keywords))
     
     # FAISSで類似検索（上位10件）
     distances, indices = search_articles(genre_keywords, k=10)
@@ -335,7 +347,12 @@ def recommend():
 
 # フロント開発用にダミーデータを返す関数
 @app.get("/TopPage", response_model=list[TopPageItem])
-def top_page():
+def top_page(current_user: Any = Depends(auth.get_current_user)):
+    print(f'current_user: {current_user}')
+    if not current_user:
+        print("ユーザーの取得に失敗しました")
+        raise HTTPException(status_code=401, detail="Not authenticated")
+        # return auth.to_login()
     dummy_data = [
         {
             "id": 0,
@@ -495,10 +512,10 @@ def top_page():
 
 # 既読エンドポンイト
 @app.post("/log_read")
-def log_read_event(log: ReadLogIn):
+def log_read_event(log: ReadLogIn, current_user: Any = Depends(auth.get_current_user)):
     inserted_id = insert_read_log(log.user_id, log.article_id)
     if inserted_id is None:
-        raise HTTPException(status_code=400, detail="Failed to insert read log")
+        raise HTTPException(status_code=401, detail="Failed to insert read log")
     return JSONResponse(
         content={"message": "Read log recorded", "id": inserted_id},
         media_type="application/json; charset=utf-8"
@@ -506,7 +523,10 @@ def log_read_event(log: ReadLogIn):
 
 # 興味のあるサイトをsource_urlテーブルに保存するエンドポイント
 @app.post("/regist_favorite_site")
-def regist_favorite_site_event(favorite: FavoriteSiteIn):
+def regist_favorite_site_event(favorite: FavoriteSiteIn, current_user: Any = Depends(auth.get_current_user)):
+    if not current_user:
+        print("ユーザーの取得に失敗しました")
+        raise HTTPException(status_code=401, detail="Not authenticated")
     user_id = 1  # 例として固定のユーザーID（実際は認証等で取得）
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -544,7 +564,10 @@ def regist_favorite_site_event(favorite: FavoriteSiteIn):
 
 # アンケート登録エンドポイント
 @app.post("/regist_survey")
-def regist_survey(survey: SurveyIn):
+def regist_survey(survey: SurveyIn, current_user: Any = Depends(auth.get_current_user)):
+    if not current_user:
+        print("ユーザーの取得に失敗しました")
+        raise HTTPException(status_code=401, detail="Not authenticated")
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -565,7 +588,6 @@ def regist_survey(survey: SurveyIn):
         media_type="application/json; charset=utf-8"
     )
 
-app.include_router(auth.router)
 
 if __name__ == '__main__':
     import uvicorn

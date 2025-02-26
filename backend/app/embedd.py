@@ -89,6 +89,12 @@ def read_articles():
 # 記事データを取得
 article_list = read_articles()
 
+# 前処理関数（HTMLタグの除去 & 空白削除）
+def preprocess_text(text):
+    text = re.sub(r'<[^>]+>', '', text)  # HTMLタグの除去
+    text = re.sub(r'\s+', ' ', text).strip()  # 余計な空白の削除
+    return text
+
 # OpenAI APIを用いてテキストをベクトル化する関数
 def get_embedding(text, model="text-embedding-ada-002"):
     response = openai.embeddings.create(
@@ -105,15 +111,26 @@ for article in article_list:
         print(f"Skipping article ID {article[0]} due to missing summary.")
         continue  # summary150 または summary1000 が None の場合、スキップ
     text_to_embed = "タイトル：" + str(article[1]) + "\n" + "本文" + str(article[3])
+    text_to_embed = preprocess_text(text_to_embed)
     embedding = get_embedding(text_to_embed)
     embeddings.append(embedding)
 
 # embeddings を numpy 配列に変換（FAISSは float32 の numpy 配列が必要）
 embeddings_np = np.array(embeddings).astype('float32')
+# 埋め込みを正規化（L2ノルムを1にする）
+embeddings_np /= np.linalg.norm(embeddings_np, axis=1, keepdims=True)
 
 # FAISS のインデックスを作成（ここでは L2 距離を用いた平坦なインデックス）
 dim = embeddings_np.shape[1]  # 埋め込みベクトルの次元数
-index = faiss.IndexFlatL2(dim)
+
+# FAISS のインデックスを作成（内積ベース）
+index = faiss.IndexFlatIP(dim)
+
+#index = faiss.IndexFlatL2(dim)
+
+#index = faiss.IndexHNSWFlat(dim, 32)  # 32はHNSWのネイバー数
+#index.hnsw.efSearch = 64  # 検索時の探索範囲を設定
+
 index.add(embeddings_np)
 print("登録されたベクトル数:", index.ntotal)
 
