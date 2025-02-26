@@ -15,7 +15,6 @@ import openai
 from dotenv import load_dotenv
 import numpy as np
 from typing import Any
-# from .auth import get_current_user, to_login, get_session
 
 #############################################################
 # 初期設定
@@ -256,32 +255,6 @@ def search_articles(query_text, k=10):
 #############################################################
 # ルート
 
-# 記事全取得テスト
-@app.get("/test", response_model=list[BlogPostSchema])
-def test():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT id, title, summary150, summary1000, content, url, published_date, created_at "
-            "FROM article ORDER BY published_date DESC"
-        )
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        print(rows)
-    except mysql.connector.Error as err:
-        raise HTTPException(status_code=500, detail=f"Database query error: {err}")
-
-    # 日付や日時オブジェクトがある場合、ISO形式に変換
-    for row in rows:
-        if isinstance(row.get("created_at"), (datetime.date, datetime.datetime)):
-            row["created_at"] = row["created_at"].isoformat()
-        if isinstance(row.get("published_date"), (datetime.date, datetime.datetime)):
-            row["published_date"] = row["published_date"].isoformat()
-
-    return JSONResponse(content=rows, media_type="application/json; charset=utf-8")
-
 # アカウント登録エンドポイント（POSTリクエスト）
 @app.post("/register_account")
 def register_account(account: AccountIn):
@@ -295,8 +268,12 @@ def register_account(account: AccountIn):
 
 # /recommend エンドポイント
 @app.get("/TopPage", response_model=list[RecommendArticle])
-def recommend():
-    user_id = 1  # 仮定のユーザーID。実際は認証情報等から取得
+def recommend(current_user: Any = Depends(auth.get_current_user)):
+    if not current_user:
+        print("ユーザーの取得に失敗しました")
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    # current_userからユーザーIDを取得（get_gmailの戻り値に合わせる）
+    user_id = current_user[0]
     
     # survey テーブルからユーザーの好みを取得する関数
     def get_user_preference(user_id: int) -> str:
@@ -344,6 +321,127 @@ def recommend():
     print(f"推薦記事件数: {len(recommended)}")
     print(f'recommended: {recommended}')
     return JSONResponse(content=recommended, media_type="application/json; charset=utf-8")
+
+
+# 既読エンドポンイト
+@app.post("/log_read")
+def log_read_event(log: ReadLogIn, current_user: Any = Depends(auth.get_current_user)):
+    inserted_id = insert_read_log(log.user_id, log.article_id)
+    if inserted_id is None:
+        raise HTTPException(status_code=401, detail="Failed to insert read log")
+    return JSONResponse(
+        content={"message": "Read log recorded", "id": inserted_id},
+        media_type="application/json; charset=utf-8"
+    )
+
+# 興味のあるサイトをsource_urlテーブルに保存するエンドポイント
+@router.post("/regist_favorite_site")
+def regist_favorite_site_event(favorite: FavoriteSiteIn, current_user: Any = Depends(auth.get_current_user)):
+    if not current_user:
+        print("ユーザーの取得に失敗しました")
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    # current_userからユーザーIDを取得（get_gmailの戻り値に合わせる）
+    user_id = current_user[0]
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # まず、source_url テーブルに同じURLが存在するかチェック
+        select_query = "SELECT id FROM source_url WHERE url = %s"
+        cursor.execute(select_query, (favorite.url,))
+        result = cursor.fetchone()
+        if result:
+            source_id = result[0]
+        else:
+            # 存在しなければ、新規登録
+            insert_source = "INSERT INTO source_url (url) VALUES (%s)"
+            cursor.execute(insert_source, (favorite.url,))
+            conn.commit()
+            source_id = cursor.lastrowid
+
+        # 次に、favorite_sites テーブルに登録（ユーザーとsource_id の組み合わせ）
+        insert_favorite = "INSERT INTO favorite_sites (user_id, source_id) VALUES (%s, %s)"
+        cursor.execute(insert_favorite, (user_id, source_id))
+        conn.commit()
+        favorite_id = cursor.lastrowid
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return JSONResponse(
+        content={"message": "Favorite site registered", "favorite_id": favorite_id},
+        media_type="application/json; charset=utf-8"
+    )
+
+# アンケート登録エンドポイント
+@app.post("/regist_survey")
+def regist_survey(
+    survey: SurveyIn, 
+    current_user: Any = Depends(auth.get_current_user)
+):
+    if not current_user:
+        print("ユーザーの取得に失敗しました")
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # current_user は例えば (user_id, gmail) などのタプルとして取得されると仮定
+    user_id = current_user[0]
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = (
+            "INSERT INTO survey (userid, age, gender, job, preferred_article_detail) "
+            "VALUES (%s, %s, %s, %s, %s)"
+        )
+        # クライアントから送信された userid は無視し、current_user の値を使用
+        values = (user_id, survey.age, survey.gender, survey.job, survey.preferred_article_detail)
+        cursor.execute(query, values)
+        conn.commit()
+        inserted_id = cursor.lastrowid
+    except mysql.connector.Error as err:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database insert error: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+    return JSONResponse(
+        content={"message": "Survey data registered", "id": inserted_id},
+        media_type="application/json; charset=utf-8"
+    )
+
+
+#############################################################
+# テスト用
+
+# 記事全取得テスト
+# @app.get("/test", response_model=list[BlogPostSchema])
+# def test():
+#     try:
+#         conn = get_db_connection()
+#         cursor = conn.cursor(dictionary=True)
+#         cursor.execute(
+#             "SELECT id, title, summary150, summary1000, content, url, published_date, created_at "
+#             "FROM article ORDER BY published_date DESC"
+#         )
+#         rows = cursor.fetchall()
+#         cursor.close()
+#         conn.close()
+#         print(rows)
+#     except mysql.connector.Error as err:
+#         raise HTTPException(status_code=500, detail=f"Database query error: {err}")
+
+#     # 日付や日時オブジェクトがある場合、ISO形式に変換
+#     for row in rows:
+#         if isinstance(row.get("created_at"), (datetime.date, datetime.datetime)):
+#             row["created_at"] = row["created_at"].isoformat()
+#         if isinstance(row.get("published_date"), (datetime.date, datetime.datetime)):
+#             row["published_date"] = row["published_date"].isoformat()
+
+#     return JSONResponse(content=rows, media_type="application/json; charset=utf-8")
 
 # フロント開発用にダミーデータを返す関数
 # @app.get("/TopPage", response_model=list[TopPageItem])
@@ -508,97 +606,6 @@ def recommend():
 #         }
 #     ]
 #     return JSONResponse(content=dummy_data, media_type="application/json; charset=utf-8")
-
-# 既読エンドポンイト
-@app.post("/log_read")
-def log_read_event(log: ReadLogIn, current_user: Any = Depends(auth.get_current_user)):
-    inserted_id = insert_read_log(log.user_id, log.article_id)
-    if inserted_id is None:
-        raise HTTPException(status_code=401, detail="Failed to insert read log")
-    return JSONResponse(
-        content={"message": "Read log recorded", "id": inserted_id},
-        media_type="application/json; charset=utf-8"
-    )
-
-# 興味のあるサイトをsource_urlテーブルに保存するエンドポイント
-@router.post("/regist_favorite_site")
-def regist_favorite_site_event(favorite: FavoriteSiteIn, current_user: Any = Depends(auth.get_current_user)):
-    if not current_user:
-        print("ユーザーの取得に失敗しました")
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    # current_userからユーザーIDを取得（get_gmailの戻り値に合わせる）
-    user_id = current_user[0]
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        # まず、source_url テーブルに同じURLが存在するかチェック
-        select_query = "SELECT id FROM source_url WHERE url = %s"
-        cursor.execute(select_query, (favorite.url,))
-        result = cursor.fetchone()
-        if result:
-            source_id = result[0]
-        else:
-            # 存在しなければ、新規登録
-            insert_source = "INSERT INTO source_url (url) VALUES (%s)"
-            cursor.execute(insert_source, (favorite.url,))
-            conn.commit()
-            source_id = cursor.lastrowid
-
-        # 次に、favorite_sites テーブルに登録（ユーザーとsource_id の組み合わせ）
-        insert_favorite = "INSERT INTO favorite_sites (user_id, source_id) VALUES (%s, %s)"
-        cursor.execute(insert_favorite, (user_id, source_id))
-        conn.commit()
-        favorite_id = cursor.lastrowid
-
-    except mysql.connector.Error as err:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error: {err}")
-    finally:
-        cursor.close()
-        conn.close()
-
-    return JSONResponse(
-        content={"message": "Favorite site registered", "favorite_id": favorite_id},
-        media_type="application/json; charset=utf-8"
-    )
-
-# アンケート登録エンドポイント
-@app.post("/regist_survey")
-def regist_survey(
-    survey: SurveyIn, 
-    current_user: Any = Depends(auth.get_current_user)
-):
-    if not current_user:
-        print("ユーザーの取得に失敗しました")
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    # current_user は例えば (user_id, gmail) などのタプルとして取得されると仮定
-    user_id = current_user[0]
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        query = (
-            "INSERT INTO survey (userid, age, gender, job, preferred_article_detail) "
-            "VALUES (%s, %s, %s, %s, %s)"
-        )
-        # クライアントから送信された userid は無視し、current_user の値を使用
-        values = (user_id, survey.age, survey.gender, survey.job, survey.preferred_article_detail)
-        cursor.execute(query, values)
-        conn.commit()
-        inserted_id = cursor.lastrowid
-    except mysql.connector.Error as err:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=f"Database insert error: {err}")
-    finally:
-        cursor.close()
-        conn.close()
-    return JSONResponse(
-        content={"message": "Survey data registered", "id": inserted_id},
-        media_type="application/json; charset=utf-8"
-    )
-
 
 if __name__ == '__main__':
     import uvicorn

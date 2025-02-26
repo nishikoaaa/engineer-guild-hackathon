@@ -74,7 +74,7 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
 # データベース関係
 # セッションの取得
 def get_session(session_id: str):
-    # print(f'ブラウザのsessionid: {session_id}')
+    print(f'ブラウザのsessionid: {session_id}')
     from .main import get_db_connection
     conn = get_db_connection()
     cursor = conn.cursor()
