@@ -293,7 +293,6 @@ def register_account(account: AccountIn):
     )
 
 # /recommend エンドポイント
-# @app.get("/recommend", response_model=list[RecommendArticle])
 @app.get("/recommend", response_model=list[RecommendArticle])
 def recommend():
     user_id = 1  # 仮定のユーザーID。実際は認証情報等から取得
