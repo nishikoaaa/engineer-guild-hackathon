@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "../QuestionPage/Question.css";
 
 const QuestionPage: React.FC = () => {
   // フォームの状態を管理するstate
@@ -58,10 +59,10 @@ const QuestionPage: React.FC = () => {
   };
 
   return (
-    <section className="bg-light py-5">
+    <section className="background">
       <div className="container px-5 my-5">
         <div className="text-center mb-5">
-          <h2 className="fw-bolder">アンケート</h2>
+          <h1 className="fw-bolder">アンケート</h1>
           <p className="lead mb-0">閲覧したい記事についてはできる限り詳しく回答してください</p>
         </div>
 
@@ -70,7 +71,7 @@ const QuestionPage: React.FC = () => {
             {!submitted ? (
               <form onSubmit={handleSubmit}>
                 {/* 年齢入力 */}
-                <div className="form-floating mb-3">
+                <div className="form-floating mb-4">
                   <input
                     className="form-control"
                     id="age"
@@ -84,7 +85,7 @@ const QuestionPage: React.FC = () => {
                 </div>
 
                 {/* 職業入力 */}
-                <div className="form-floating mb-3">
+                <div className="form-floating mb-4">
                   <input
                     className="form-control"
                     id="business"
@@ -98,7 +99,7 @@ const QuestionPage: React.FC = () => {
                 </div>
 
                 {/* 性別（ラジオボタン） */}
-                <div className="mb-3">
+                <div className="mb-4">
                   <label className="form-label">性別</label>
                   <div>
                     {options.map((option) => (
