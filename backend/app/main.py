@@ -8,6 +8,7 @@ import mysql.connector
 import datetime
 import json
 import os
+from . import auth
 import faiss
 from openai import OpenAI
 import openai
@@ -17,6 +18,8 @@ import numpy as np
 #############################################################
 # 初期設定
 app = FastAPI()
+
+
 
 app_env = os.getenv("FASTAPI_ENV", "development")
 if app_env == "development":
@@ -62,6 +65,38 @@ def get_db_connection():
         return conn
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Database connection error: {err}")
+
+# user_id取得
+def get_user_id(gmail: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = "SELECT id FROM account WHERE gmail = (%s)"
+        cursor.execute(query, (gmail,))
+        user_id = cursor.fetchone()
+        return user_id
+    except mysql.connector.Error as err:
+        print(f"Error getting user_id: {err}")
+        return -1
+    finally:
+        cursor.close()
+        conn.close()
+
+# gmail取得
+def get_gmail(user_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = "SELECT id, gmail FROM account WHERE id = (%s)"
+        cursor.execute(query, (user_id,))
+        account = cursor.fetchone()
+        return account
+    except mysql.connector.Error as err:
+        print(f"Error getting gmail: {err}")
+        return -1
+    finally:
+        cursor.close()
+        conn.close()
 
 # gmail挿入
 def insert_gmail(gmail: str):
@@ -226,14 +261,14 @@ def test():
         print(rows)
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Database query error: {err}")
-    
+
     # 日付や日時オブジェクトがある場合、ISO形式に変換
     for row in rows:
         if isinstance(row.get("created_at"), (datetime.date, datetime.datetime)):
             row["created_at"] = row["created_at"].isoformat()
         if isinstance(row.get("published_date"), (datetime.date, datetime.datetime)):
             row["published_date"] = row["published_date"].isoformat()
-    
+
     return JSONResponse(content=rows, media_type="application/json; charset=utf-8")
 
 # アカウント登録エンドポイント（POSTリクエスト）
@@ -248,12 +283,30 @@ def register_account(account: AccountIn):
     )
 
 # /recommend エンドポイント
+# @app.get("/recommend", response_model=list[RecommendArticle])
 @app.get("/recommend", response_model=list[RecommendArticle])
-# def recommend(user_id: int = Query(..., description="ログインしているユーザーのID")):
 def recommend():
-    user_id = 1
-    # ユーザーの好みを表す文章（実際は survey などから取得）
-    preferred_article_detail = "技術系の記事をもっと読みたい。特にAI関連に興味がある。"
+    user_id = 1  # 仮定のユーザーID。実際は認証情報等から取得
+    
+    # survey テーブルからユーザーの好みを取得する関数
+    def get_user_preference(user_id: int) -> str:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            query = "SELECT preferred_article_detail FROM survey WHERE userid = %s"
+            cursor.execute(query, (user_id,))
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            if row and row.get("preferred_article_detail"):
+                return row["preferred_article_detail"]
+            else:
+                raise HTTPException(status_code=404, detail="User survey data not found")
+        except mysql.connector.Error as err:
+            raise HTTPException(status_code=500, detail=f"Database query error: {err}")
+
+    # surveyテーブルから好みを取得
+    preferred_article_detail = get_user_preference(user_id)
     print("ユーザーの好み:", preferred_article_detail)
     
     # LLMに好みからジャンルキーワードのみ抽出させる
@@ -287,7 +340,7 @@ def top_page():
         {
             "id": 0,
             "title": "最新ニュース: テクノロジーの革新",
-            "summary50": "新たな技術が市場に衝撃を与える。",
+            "summary50": "新たな技術が市場に衝撃を与えるあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ",
             "summary1000": (
                 "本日のニュースでは、最新のテクノロジートレンドに関する詳細な分析をお届けします。"
                 "AI、IoT、そしてブロックチェーン技術の急速な発展により、今後の産業構造が大きく変化することが期待されます。"
@@ -303,7 +356,7 @@ def top_page():
         {
             "id": 1,
             "title": "経済ニュース: 市場動向レポート",
-            "summary50": "株式市場に変動、注目の経済指標も。",
+            "summary50": "新たな技術が市場に衝撃を与えるあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ",
             "summary1000": (
                 "本日の経済ニュースは、国内外の市場動向に焦点を当てたレポートです。"
                 "主要株価指数の急変や、最新の経済指標、そして政府の経済政策に関する情報を詳細に分析しています。"
@@ -319,7 +372,7 @@ def top_page():
         {
             "id": 2,
             "title": "エンタメ: 映画レビュー特集",
-            "summary50": "今話題の最新映画を徹底レビュー。",
+            "summary50": "新たな技術が市場に衝撃を与えるあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ",
             "summary1000": (
                 "エンターテインメント分野では、最新公開の映画に関するレビューが注目を集めています。"
                 "ストーリー、演技、映像美、そして音楽のクオリティに至るまで、総合的な評価を行いました。"
@@ -334,7 +387,7 @@ def top_page():
         {
             "id": 3,
             "title": "スポーツ: 国際大会速報",
-            "summary50": "世界が注目する熱戦が繰り広げられる。",
+            "summary50": "新たな技術が市場に衝撃を与えるあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ",
             "summary1000": (
                 "スポーツニュースでは、国際大会での注目試合について速報をお伝えします。"
                 "各国のエース選手が激突する中、戦術やパフォーマンスに注目が集まっています。"
@@ -349,7 +402,7 @@ def top_page():
         {
             "id": 4,
             "title": "政治: 政策発表と議論",
-            "summary50": "政府が新たな政策を発表。",
+            "summary50": "新たな技術が市場に衝撃を与えるあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ",
             "summary1000": (
                 "政治の最新動向として、政府が重要な政策を発表し、議会で活発な議論が交わされています。"
                 "政策の影響や今後の見通しについて、専門家の意見も取り入れた詳細な分析をお届けします。"
@@ -364,7 +417,7 @@ def top_page():
         {
             "id": 5,
             "title": "健康: 新しいライフスタイル提案",
-            "summary50": "健康志向の生活が注目を浴びる。",
+            "summary50": "新たな技術が市場に衝撃を与えるあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ",
             "summary1000": (
                 "健康ニュースでは、最新のライフスタイル提案や健康法、栄養情報を紹介。"
                 "ストレス管理や運動、食事法に関する専門家のアドバイスが豊富です。"
@@ -379,7 +432,7 @@ def top_page():
         {
             "id": 6,
             "title": "ビジネス: 企業戦略の転換",
-            "summary50": "注目企業が戦略を一新。",
+            "summary50": "新たな技術が市場に衝撃を与えるあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ",
             "summary1000": (
                 "ビジネスニュースでは、業界の注目企業が新たな戦略を発表し、市場でのポジションを再定義する動きについて解説します。"
                 "競合分析や今後の見通しにも迫ります。"
@@ -394,7 +447,7 @@ def top_page():
         {
             "id": 7,
             "title": "国際: 世界情勢の変化",
-            "summary50": "国際情勢における新たな動き。",
+            "summary50": "新たな技術が市場に衝撃を与えるあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ",
             "summary1000": (
                 "国際ニュースでは、各国間の外交関係や国際会議の結果など、世界情勢における重要な変化を詳しく伝えます。"
                 "地域ごとの影響や今後の課題についても分析します。"
@@ -409,7 +462,7 @@ def top_page():
         {
             "id": 8,
             "title": "ライフスタイル: 新しい暮らしの提案",
-            "summary50": "暮らしに役立つ最新トレンド。",
+            "summary50": "新たな技術が市場に衝撃を与えるあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ",
             "summary1000": (
                 "ライフスタイルニュースでは、日常生活を豊かにする新しいアイディアやトレンド、インテリアやDIYの情報を紹介します。"
                 "生活の質を向上させるためのヒントが満載です。"
@@ -424,7 +477,7 @@ def top_page():
         {
             "id": 9,
             "title": "カルチャー: 芸術と文化の探求",
-            "summary50": "文化の多様性を体感する。",
+            "summary50": "新たな技術が市場に衝撃を与えるあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ",
             "summary1000": (
                 "カルチャーニュースでは、現代アートや音楽、伝統文化に焦点を当て、"
                 "世界各地の文化的イベントや展覧会の情報をお届けします。"
@@ -440,6 +493,7 @@ def top_page():
     ]
     return JSONResponse(content=dummy_data, media_type="application/json; charset=utf-8")
 
+# 既読エンドポンイト
 @app.post("/log_read")
 def log_read_event(log: ReadLogIn):
     inserted_id = insert_read_log(log.user_id, log.article_id)
@@ -510,6 +564,8 @@ def regist_survey(survey: SurveyIn):
         content={"message": "Survey data registered", "id": inserted_id},
         media_type="application/json; charset=utf-8"
     )
+
+app.include_router(auth.router)
 
 if __name__ == '__main__':
     import uvicorn
