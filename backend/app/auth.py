@@ -119,8 +119,9 @@ async def login():
 
 # ログイン後に呼び出されるコールバック
 @router.get("/login/callback/")
-async def login_callback(response: Response, code: str = Query(...)):
-    first_visit = False
+async def login_callback(code: str = Query(...)):
+    redirect_url = "http://localhost:3000/TopPage"
+
     from .main import get_user_id, insert_gmail
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
@@ -153,12 +154,14 @@ async def login_callback(response: Response, code: str = Query(...)):
     elif user_id is None:
         insert_gmail(gmail)
         user_id = get_user_id(gmail)[0]
-        first_visit = True
+        redirect_url = "http://localhost:3000/WelcomePage"
     else:
         user_id = user_id[0]
 
     session_id = create_session_id()
     add_session(session_id, user_id)
+
+    response = RedirectResponse(url=redirect_url)
 
     expires = datetime.now(tz=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     response.set_cookie(
@@ -168,10 +171,7 @@ async def login_callback(response: Response, code: str = Query(...)):
         httponly=True,
     )
 
-    if first_visit:
-        return RedirectResponse("http://localhost:3000/WelcomePage")
-    else:
-        return RedirectResponse("http://localhost:3000/TopPage")
+    return response
 
 @router.get("/authtest")
 async def test(current_user: Any = Depends(get_current_user)):
