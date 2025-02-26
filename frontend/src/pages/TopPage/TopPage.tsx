@@ -22,29 +22,30 @@ const TopPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        const response = await fetch(API_URL, {
-          method: "GET",
-          credentials: "include",
-          redirect: "follow",
-          mode: "cors",
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data: Article[] = await response.json();
-        setArticles(data);
-      } catch (err: any) {
-        setError(err.message || "エラーが発生しました");
-      } finally {
-        setLoading(false);
+// TopPage.tsx 内の fetchArticles 関数例
+useEffect(() => {
+  const fetchArticles = async () => {
+    try {
+      const response = await fetch(API_URL);
+      if (response.status === 401) {
+        // 未認証の場合、ログインページに遷移
+        window.location.href = "http://localhost:3000";
+        return;
       }
-    };
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data: Article[] = await response.json();
+      setArticles(data);
+    } catch (err: any) {
+      setError(err.message || "エラーが発生しました");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchArticles();
-  }, []);
+  fetchArticles();
+}, []);
 
   // 記事クリック時のログ登録処理
   const handleLogRead = async (articleId: number) => {

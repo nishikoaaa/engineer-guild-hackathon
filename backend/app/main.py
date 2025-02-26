@@ -15,7 +15,7 @@ import openai
 from dotenv import load_dotenv
 import numpy as np
 from typing import Any
-from .auth import get_current_user, to_login, get_session
+# from .auth import get_current_user, to_login, get_session
 
 #############################################################
 # 初期設定
@@ -347,10 +347,12 @@ def recommend():
 
 # フロント開発用にダミーデータを返す関数
 @app.get("/TopPage", response_model=list[TopPageItem])
-def top_page(current_user: Any = Depends(get_current_user)):
+def top_page(current_user: Any = Depends(auth.get_current_user)):
+    print(f'current_user: {current_user}')
     if not current_user:
         print("ユーザーの取得に失敗しました")
-        return to_login()
+        raise HTTPException(status_code=401, detail="Not authenticated")
+        # return auth.to_login()
     dummy_data = [
         {
             "id": 0,
