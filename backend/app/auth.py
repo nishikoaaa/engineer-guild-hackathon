@@ -27,6 +27,7 @@ def create_session_id() -> str:
 # セッションを用いた検証
 async def get_current_user(session_id: str = Cookie(None)):
     from .main import get_gmail
+    print(f'sessionid: {session_id}')
     if session_id is None or not get_session(session_id):
         return False
     else:
