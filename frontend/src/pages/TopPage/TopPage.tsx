@@ -62,45 +62,54 @@ const TopPage: React.FC = () => {
   if (error) return <p className="error">エラー: {error}</p>;
 
   return (
-    <div className="Background">
-      <ul className="circles">
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-      </ul>
-      <h1>TopPageです</h1>
+    <div
+      className="TopPage"
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #4b6cb7 0%, #182848 100%)",
+        padding: "2rem",
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+      }}
+    >
+      <div className="registration">
+        <h1 className="sakuhinmei">TopPageです</h1>
+      </div>
       <div className="articles">
         {articles.map((article) => (
           <div key={article.id} className="article-card">
-            <p>公開日: {new Date(article.published_date).toLocaleDateString()}</p>
+            <div className="releasedate">
+              <p>公開日: {new Date(article.published_date).toLocaleDateString()}</p>
+            </div>
             <div className="articlemain">
               <h2 className="title">{article.title}</h2>
               <div className="picture">syashinn</div>
             </div>
-            <p>{article.summary50}</p>
-            <p>
-              <a
+            <div className="summary50words">
+              <p>{article.summary50}
+              <button className="readbutton" style={{ display: "inline-block", marginLeft: "10px" }} onClick={() => handleLogRead(article.id)}>
+                <a
                 href={article.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => handleLogRead(article.id)}
-              >
-                記事を読む
-              </a>
-            </p>
+                className="readlink"
+                >
+                  記事を読む ▶
+                  <span className="underline"></span>
+                </a>
+              </button>
+
+              </p>
+
+            </div>
+            
           </div>
         ))}
       </div>
-      {/* 右上にサイト登録用フォームコンポーネントを表示 */}
-      <RegisterSiteButton />
-    </div>
+          <RegisterSiteButton />
+      </div>
   );
 };
 
