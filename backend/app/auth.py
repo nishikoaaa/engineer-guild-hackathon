@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, status, Query, Cookie
 from fastapi.security import OAuth2AuthorizationCodeBearer
-from fastapi.responses import Response
+from fastapi.responses import Response, RedirectResponse
 from dotenv import load_dotenv
 import httpx
 import os
@@ -106,6 +106,8 @@ def add_session(session_id: str, user_id: int):
 
 #############################################################
 # ルート
+
+# ログイン
 @router.get("/login")
 async def login():
     auth_url = (
@@ -115,8 +117,10 @@ async def login():
     )
     return {"auth_url": auth_url}
 
+# ログイン後に呼び出されるコールバック
 @router.get("/login/callback/")
 async def login_callback(response: Response, code: str = Query(...)):
+    first_visit = False
     from .main import get_user_id, insert_gmail
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
@@ -149,6 +153,7 @@ async def login_callback(response: Response, code: str = Query(...)):
     elif user_id is None:
         insert_gmail(gmail)
         user_id = get_user_id(gmail)[0]
+        first_visit = True
     else:
         user_id = user_id[0]
 
@@ -163,7 +168,10 @@ async def login_callback(response: Response, code: str = Query(...)):
         httponly=True,
     )
 
-    return gmail
+    if first_visit:
+        return RedirectResponse("http://localhost:3000/WelcomePage")
+    else:
+        return RedirectResponse("http://localhost:3000/TopPage")
 
 @router.get("/authtest")
 async def test(current_user: Any = Depends(get_current_user)):
