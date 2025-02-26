@@ -125,7 +125,7 @@ async def login():
 @router.get("/logout")
 async def logout(response: Response):
     response.delete_cookie("session_id")
-    return None
+    return RedirectResponse(url="http://localhost:3000")
 
 # ログイン後に呼び出されるコールバック
 @router.get("/login/callback/")
