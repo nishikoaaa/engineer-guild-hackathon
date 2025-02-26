@@ -108,6 +108,26 @@ def add_session(session_id: str, user_id: int):
         cursor.close()
         conn.close()
 
+# アンケートに答えたかどうかの判別
+def answerd_survey(user_id: int):
+    from .main import get_db_connection
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = "SELECT * FROM survey WHERE userid = (%s)"
+        cursor.execute(query, (user_id))
+        result = cursor.fetchone()
+        if result is None:
+            return False
+        else:
+            return True
+    except mysql.connector.Error as err:
+        print(f"Error getting user from surcey: {err}")
+        return None
+    finally:
+        cursor.close()
+        conn.close()
+
 #############################################################
 # ルート
 
@@ -178,6 +198,9 @@ async def login_callback(code: str = Query(...)):
     # セッションIDの生成と user_auth への登録
     session_id = create_session_id()
     add_session(session_id, user_id)
+
+    if not answerd_survey(user_id):
+        redirect_url = "http://localhost:3000/Question"
 
     response = RedirectResponse(url=redirect_url)
 
