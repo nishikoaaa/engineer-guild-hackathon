@@ -117,10 +117,19 @@ for article in article_list:
 
 # embeddings を numpy 配列に変換（FAISSは float32 の numpy 配列が必要）
 embeddings_np = np.array(embeddings).astype('float32')
+# 埋め込みを正規化（L2ノルムを1にする）
+embeddings_np /= np.linalg.norm(embeddings_np, axis=1, keepdims=True)
 
 # FAISS のインデックスを作成（ここでは L2 距離を用いた平坦なインデックス）
 dim = embeddings_np.shape[1]  # 埋め込みベクトルの次元数
-index = faiss.IndexFlatL2(dim)
+# FAISS のインデックスを作成（内積ベース）
+index = faiss.IndexFlatIP(dim)
+
+#index = faiss.IndexFlatL2(dim)
+
+#index = faiss.IndexHNSWFlat(dim, 32)  # 32はHNSWのネイバー数
+#index.hnsw.efSearch = 64  # 検索時の探索範囲を設定
+
 index.add(embeddings_np)
 print("登録されたベクトル数:", index.ntotal)
 
