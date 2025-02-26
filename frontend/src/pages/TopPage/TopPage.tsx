@@ -33,7 +33,7 @@ const TopPage: React.FC = () => {
         });
         if (response.status === 401) {
           // 未認証の場合、ログインページに遷移
-          window.location.href = "http://localhost:3000/login";
+          window.location.href = "http://localhost:3000";
           return;
         }
         if (!response.ok) {
