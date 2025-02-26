@@ -28,10 +28,7 @@ def create_session_id() -> str:
 async def get_current_user(session_id: str = Cookie(None)):
     from .main import get_gmail
     if session_id is None or not get_session(session_id):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Not authenticated session_id: {get_session(session_id)}",
-        )
+        return False
     else:
         user_id = get_session(session_id)[1]
         user = get_gmail(user_id)
@@ -41,6 +38,10 @@ async def get_current_user(session_id: str = Cookie(None)):
                 detail="Cloud not validate credentials",
             )
         return user
+
+# ログインページリダイレクト専用関数
+def to_login():
+    return RedirectResponse(url="http://localhost:3000")
 
 
 #############################################################
@@ -175,4 +176,6 @@ async def login_callback(code: str = Query(...)):
 
 @router.get("/authtest")
 async def test(current_user: Any = Depends(get_current_user)):
+    if not current_user:
+        return to_login()
     return {"user": current_user}
