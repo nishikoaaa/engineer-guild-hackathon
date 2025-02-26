@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./Question.css";
 
 const QuestionPage: React.FC = () => {
 
@@ -63,7 +62,17 @@ const QuestionPage: React.FC = () => {
   };
 
   return (
-    <section className="background">
+    <section className="background"
+    style={{
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "linear-gradient(135deg, #4b6cb7 0%, #182848 100%)",
+      color: "#fff",
+      textAlign: "center",
+      padding: "2rem",
+    }}>
       <div className="container px-5 my-5">
         <div className="text-center mb-5">
           <h1 className="fw-bolder">アンケート</h1>
