@@ -1,18 +1,19 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "../QuestionPage/Question.css";
+import "./Question.css";
 
 const QuestionPage: React.FC = () => {
-  // フォームの状態を管理するstate
+
   const [formData, setFormData] = useState({
     age: "",
-    business: "",
+    job: "",
     gender: "",
     comment: "",
   });
 
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [loading, setLoading] = useState(false);
 
   const options = ["男性", "女性", "その他"];
 
@@ -37,7 +38,7 @@ const QuestionPage: React.FC = () => {
 
     const newErrors: { [key: string]: string } = {};
     if (!formData.age) newErrors.age = "年齢を入力してください";
-    if (!formData.business) newErrors.business = "職業を入力してください";
+    if (!formData.job) newErrors.job = "職業を入力してください";
     if (!formData.gender) newErrors.gender = "性別を選択してください";
     if (!formData.comment) newErrors.comment = "閲覧したい記事について入力してください";
 
@@ -46,11 +47,14 @@ const QuestionPage: React.FC = () => {
       return;
     }
 
+    setLoading(true);
+
     const sendData = {
+      userid: 0,
       age: parseInt(formData.age, 10),
-      business: formData.business,
       gender: formData.gender,
-      comment: formData.comment,
+      job: formData.job,
+      preferred_article_detail: formData.comment,
     };
 
     console.log("送信データ:", sendData);
@@ -88,13 +92,13 @@ const QuestionPage: React.FC = () => {
                 <div className="form-floating mb-4">
                   <input
                     className="form-control"
-                    id="business"
+                    id="job"
                     type="text"
-                    name="business"
-                    value={formData.business}
+                    name="job"
+                    value={formData.job}
                     onChange={handleChange}
                   />
-                  <label htmlFor="business">職業</label>
+                  <label htmlFor="job">職業</label>
                   {errors.business && <p className="text-danger">{errors.business}</p>}
                 </div>
 
@@ -143,7 +147,7 @@ const QuestionPage: React.FC = () => {
               <div className="text-center mt-4">
                 <h4>送信ありがとうございました！</h4>
                 <p><strong>年齢:</strong> {formData.age}</p>
-                <p><strong>職業:</strong> {formData.business}</p>
+                <p><strong>職業:</strong> {formData.job}</p>
                 <p><strong>性別:</strong> {formData.gender}</p>
                 <p><strong>閲覧したい記事について:</strong> {formData.comment}</p>
                 <button className="btn btn-secondary mt-3" onClick={() => setSubmitted(false)}>
