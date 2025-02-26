@@ -204,7 +204,7 @@ async def login_callback(code: str = Query(...)):
     add_session(session_id, user_id)
 
     if not answerd_survey(user_id):
-        redirect_url = "http://localhost:3000/Question"
+        redirect_url = "http://localhost:3000/QuestionPage"
 
     response = RedirectResponse(url=redirect_url)
 
