@@ -89,6 +89,12 @@ def read_articles():
 # 記事データを取得
 article_list = read_articles()
 
+# 前処理関数（HTMLタグの除去 & 空白削除）
+def preprocess_text(text):
+    text = re.sub(r'<[^>]+>', '', text)  # HTMLタグの除去
+    text = re.sub(r'\s+', ' ', text).strip()  # 余計な空白の削除
+    return text
+
 # OpenAI APIを用いてテキストをベクトル化する関数
 def get_embedding(text, model="text-embedding-ada-002"):
     response = openai.embeddings.create(
@@ -105,6 +111,7 @@ for article in article_list:
         print(f"Skipping article ID {article[0]} due to missing summary.")
         continue  # summary150 または summary1000 が None の場合、スキップ
     text_to_embed = "タイトル：" + str(article[1]) + "\n" + "本文" + str(article[3])
+    text_to_embed = preprocess_text(text_to_embed)
     embedding = get_embedding(text_to_embed)
     embeddings.append(embedding)
 
