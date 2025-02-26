@@ -1,6 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client"; // `react-dom/client` を使用
 import App from "./App";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
 
