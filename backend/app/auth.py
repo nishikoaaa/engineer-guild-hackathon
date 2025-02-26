@@ -21,8 +21,10 @@ def decode_email(tokenid):
 
 # セッションIDの生成
 def create_session_id() -> str:
-    session_id = secrets.token_hex(SESSION_ID_LENGTH)
-    return session_id
+    while True:
+        session_id = secrets.token_hex(SESSION_ID_LENGTH)
+        if not get_session(session_id):
+            return session_id
 
 # セッションを用いた検証
 async def get_current_user(session_id: str = Cookie(None)):
@@ -123,6 +125,12 @@ async def login():
     )
     return {"auth_url": auth_url}
 
+# ログアウト
+@router.get("/logout")
+async def logout(response: Response):
+    response.delete_cookie("session_id")
+    return RedirectResponse(url="http://localhost:3000")
+
 # ログイン後に呼び出されるコールバック
 @router.get("/login/callback/")
 async def login_callback(code: str = Query(...)):
@@ -150,7 +158,7 @@ async def login_callback(code: str = Query(...)):
         )
     # トークンからgmailをデコード
     gmail = decode_email(token_response_json["id_token"])
-    
+
     # accountテーブルに gmail が存在するか確認
     account_record = get_user_id(gmail)
     if account_record is None:
@@ -170,13 +178,13 @@ async def login_callback(code: str = Query(...)):
             )
     # get_user_id() の戻り値はタプルで返っていると仮定（例: (user_id, )）
     user_id = account_record[0]
-    
+
     # セッションIDの生成と user_auth への登録
     session_id = create_session_id()
     add_session(session_id, user_id)
 
     response = RedirectResponse(url=redirect_url)
-    
+
     # クッキーにセッションIDを設定（有効期限はACCESS_TOKEN_EXPIRE_MINUTES分）
     expires = datetime.now(tz=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     response.set_cookie(
@@ -188,6 +196,7 @@ async def login_callback(code: str = Query(...)):
 
     return response
 
+#　テスト用のルート
 @router.get("/authtest")
 async def test(current_user: Any = Depends(get_current_user)):
     if not current_user:
