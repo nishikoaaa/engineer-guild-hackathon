@@ -32,33 +32,56 @@ const QuestionPage: React.FC = () => {
   };
 
   // 送信時の処理（バリデーションチェック）
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     const newErrors: { [key: string]: string } = {};
     if (!formData.age) newErrors.age = "年齢を入力してください";
     if (!formData.job) newErrors.job = "職業を入力してください";
     if (!formData.gender) newErrors.gender = "性別を選択してください";
     if (!formData.comment) newErrors.comment = "閲覧したい記事について入力してください";
-
+  
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-
+  
     setLoading(true);
-
+  
     const sendData = {
-      userid: 0,
+      userid: 0,  // バックエンド側で current_user[0] に置き換えられるのでダミー
       age: parseInt(formData.age, 10),
       gender: formData.gender,
       job: formData.job,
       preferred_article_detail: formData.comment,
     };
-
+  
     console.log("送信データ:", sendData);
-    setErrors({});
-    setSubmitted(true);
+  
+    try {
+      const response = await fetch("http://localhost:4000/regist_survey", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Cookie を含める (認証済みユーザーの情報を送る)
+        body: JSON.stringify(sendData),
+      });
+  
+      const data = await response.json();
+      if (response.ok) {
+        console.log("サーバーからのレスポンス:", data);
+        setSubmitted(true);
+      } else {
+        console.error("送信エラー:", data.detail);
+        setErrors({ general: "アンケートの送信に失敗しました" });
+      }
+    } catch (error) {
+      console.error("通信エラー:", error);
+      setErrors({ general: "サーバーに接続できませんでした" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

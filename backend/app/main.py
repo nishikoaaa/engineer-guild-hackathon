@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query, Depends, Cookie
+from fastapi import FastAPI, APIRouter, HTTPException, Query, Depends, Cookie
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from langchain.schema import SystemMessage, HumanMessage, Document
@@ -20,6 +20,8 @@ from typing import Any
 #############################################################
 # 初期設定
 app = FastAPI()
+
+router = APIRouter()
 
 app.include_router(auth.router)
 
@@ -518,12 +520,14 @@ def log_read_event(log: ReadLogIn, current_user: Any = Depends(auth.get_current_
     )
 
 # 興味のあるサイトをsource_urlテーブルに保存するエンドポイント
-@app.post("/regist_favorite_site")
+@router.post("/regist_favorite_site")
 def regist_favorite_site_event(favorite: FavoriteSiteIn, current_user: Any = Depends(auth.get_current_user)):
     if not current_user:
         print("ユーザーの取得に失敗しました")
         raise HTTPException(status_code=401, detail="Not authenticated")
-    user_id = 1  # 例として固定のユーザーID（実際は認証等で取得）
+    # current_userからユーザーIDを取得（get_gmailの戻り値に合わせる）
+    user_id = current_user[0]
+    
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -560,16 +564,26 @@ def regist_favorite_site_event(favorite: FavoriteSiteIn, current_user: Any = Dep
 
 # アンケート登録エンドポイント
 @app.post("/regist_survey")
-def regist_survey(survey: SurveyIn, current_user: Any = Depends(auth.get_current_user)):
+def regist_survey(
+    survey: SurveyIn, 
+    current_user: Any = Depends(auth.get_current_user)
+):
     if not current_user:
         print("ユーザーの取得に失敗しました")
         raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # current_user は例えば (user_id, gmail) などのタプルとして取得されると仮定
+    user_id = current_user[0]
+    
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        query = ("INSERT INTO survey (userid, age, gender, job, preferred_article_detail) "
-                 "VALUES (%s, %s, %s, %s, %s)")
-        values = (survey.userid, survey.age, survey.gender, survey.job, survey.preferred_article_detail)
+        query = (
+            "INSERT INTO survey (userid, age, gender, job, preferred_article_detail) "
+            "VALUES (%s, %s, %s, %s, %s)"
+        )
+        # クライアントから送信された userid は無視し、current_user の値を使用
+        values = (user_id, survey.age, survey.gender, survey.job, survey.preferred_article_detail)
         cursor.execute(query, values)
         conn.commit()
         inserted_id = cursor.lastrowid
