@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, status, Query, Cookie
 from fastapi.security import OAuth2AuthorizationCodeBearer
-from fastapi.responses import Response
+from fastapi.responses import Response, RedirectResponse
 from dotenv import load_dotenv
 import httpx
 import os
@@ -21,19 +21,21 @@ def decode_email(tokenid):
 
 # セッションIDの生成
 def create_session_id() -> str:
-    session_id = secrets.token_hex(SESSION_ID_LENGTH)
-    return session_id
+    while True:
+        session_id = secrets.token_hex(SESSION_ID_LENGTH)
+        if not get_session(session_id):
+            return session_id
 
 # セッションを用いた検証
 async def get_current_user(session_id: str = Cookie(None)):
     from .main import get_gmail
+    print(f'ブラウザのsessionid: {session_id}')
     if session_id is None or not get_session(session_id):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Not authenticated session_id: {get_session(session_id)}",
-        )
+        print('ブラウザのセッションとデータベースのセッションが違った')
+        return False
     else:
-        user_id = get_session(session_id)[1]
+        user_id = get_session(session_id)[2]
+        print(f'user_id: {user_id}')
         user = get_gmail(user_id)
         if user is None:
             raise HTTPException(
@@ -41,6 +43,10 @@ async def get_current_user(session_id: str = Cookie(None)):
                 detail="Cloud not validate credentials",
             )
         return user
+
+# ログインページリダイレクト専用関数
+def to_login():
+    return RedirectResponse(url="http://localhost:3000")
 
 
 #############################################################
@@ -55,7 +61,7 @@ REDIRECT_URI = os.getenv("REDIRECT_URI")
 AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 1
+ACCESS_TOKEN_EXPIRE_MINUTES = 10
 SESSION_ID_LENGTH = 32
 
 
@@ -68,6 +74,7 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
 # データベース関係
 # セッションの取得
 def get_session(session_id: str):
+    print(f'ブラウザのsessionid: {session_id}')
     from .main import get_db_connection
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -76,6 +83,7 @@ def get_session(session_id: str):
         cursor.execute(query, (session_id,))
         session = cursor.fetchone()
         if session is None:
+            print('データベースにuser_auth_idがありませんでした。')
             return
         else:
             return session
@@ -106,6 +114,8 @@ def add_session(session_id: str, user_id: int):
 
 #############################################################
 # ルート
+
+# ログイン
 @router.get("/login")
 async def login():
     auth_url = (
@@ -115,8 +125,17 @@ async def login():
     )
     return {"auth_url": auth_url}
 
+# ログアウト
+@router.get("/logout")
+async def logout(response: Response):
+    response.delete_cookie("session_id")
+    return RedirectResponse(url="http://localhost:3000")
+
+# ログイン後に呼び出されるコールバック
 @router.get("/login/callback/")
-async def login_callback(response: Response, code: str = Query(...)):
+async def login_callback(code: str = Query(...)):
+    redirect_url = "http://localhost:3000/TopPage"
+
     from .main import get_user_id, insert_gmail
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
@@ -139,7 +158,7 @@ async def login_callback(response: Response, code: str = Query(...)):
         )
     # トークンからgmailをデコード
     gmail = decode_email(token_response_json["id_token"])
-    
+
     # accountテーブルに gmail が存在するか確認
     account_record = get_user_id(gmail)
     if account_record is None:
@@ -159,11 +178,13 @@ async def login_callback(response: Response, code: str = Query(...)):
             )
     # get_user_id() の戻り値はタプルで返っていると仮定（例: (user_id, )）
     user_id = account_record[0]
-    
+
     # セッションIDの生成と user_auth への登録
     session_id = create_session_id()
     add_session(session_id, user_id)
-    
+
+    response = RedirectResponse(url=redirect_url)
+
     # クッキーにセッションIDを設定（有効期限はACCESS_TOKEN_EXPIRE_MINUTES分）
     expires = datetime.now(tz=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     response.set_cookie(
@@ -172,9 +193,12 @@ async def login_callback(response: Response, code: str = Query(...)):
         expires=expires,
         httponly=True,
     )
-    
-    return gmail
 
+    return response
+
+#　テスト用のルート
 @router.get("/authtest")
 async def test(current_user: Any = Depends(get_current_user)):
+    if not current_user:
+        return to_login()
     return {"user": current_user}
