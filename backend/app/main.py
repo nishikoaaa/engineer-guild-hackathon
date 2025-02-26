@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends, Cookie
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from langchain.schema import SystemMessage, HumanMessage, Document
@@ -14,16 +14,18 @@ from openai import OpenAI
 import openai
 from dotenv import load_dotenv
 import numpy as np
+from typing import Any
+from .auth import get_current_user, to_login, get_session
 
 #############################################################
 # 初期設定
 app = FastAPI()
 
-
+app.include_router(auth.router)
 
 app_env = os.getenv("FASTAPI_ENV", "development")
 if app_env == "development":
-    allow_credentials = False
+    allow_credentials = True
     origins = ["http://localhost:3000"]
 else:
     pass
@@ -335,7 +337,10 @@ def recommend():
 
 # フロント開発用にダミーデータを返す関数
 @app.get("/TopPage", response_model=list[TopPageItem])
-def top_page():
+def top_page(current_user: Any = Depends(get_current_user)):
+    if not current_user:
+        print("ユーザーの取得に失敗しました")
+        return to_login()
     dummy_data = [
         {
             "id": 0,
@@ -565,7 +570,6 @@ def regist_survey(survey: SurveyIn):
         media_type="application/json; charset=utf-8"
     )
 
-app.include_router(auth.router)
 
 if __name__ == '__main__':
     import uvicorn
