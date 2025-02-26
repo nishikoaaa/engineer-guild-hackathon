@@ -137,24 +137,34 @@ async def login_callback(response: Response, code: str = Query(...)):
             status_code=e.response.status_code,
             detail=e.response.json()
         )
+    # トークンからgmailをデコード
     gmail = decode_email(token_response_json["id_token"])
-
-    user_id = get_user_id(gmail)
-
-    if user_id == -1:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials"
-        )
-    elif user_id is None:
-        insert_gmail(gmail)
-        user_id = get_user_id(gmail)[0]
-    else:
-        user_id = user_id[0]
-
+    
+    # accountテーブルに gmail が存在するか確認
+    account_record = get_user_id(gmail)
+    if account_record is None:
+        # 存在しなければ新規登録
+        inserted_id = insert_gmail(gmail)
+        if inserted_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to register account"
+            )
+        # 登録後に再取得
+        account_record = get_user_id(gmail)
+        if account_record is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve account information"
+            )
+    # get_user_id() の戻り値はタプルで返っていると仮定（例: (user_id, )）
+    user_id = account_record[0]
+    
+    # セッションIDの生成と user_auth への登録
     session_id = create_session_id()
     add_session(session_id, user_id)
-
+    
+    # クッキーにセッションIDを設定（有効期限はACCESS_TOKEN_EXPIRE_MINUTES分）
     expires = datetime.now(tz=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     response.set_cookie(
         key="session_id",
@@ -162,7 +172,7 @@ async def login_callback(response: Response, code: str = Query(...)):
         expires=expires,
         httponly=True,
     )
-
+    
     return gmail
 
 @router.get("/authtest")
