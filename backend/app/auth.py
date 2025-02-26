@@ -29,11 +29,13 @@ def create_session_id() -> str:
 # セッションを用いた検証
 async def get_current_user(session_id: str = Cookie(None)):
     from .main import get_gmail
-    print(f'sessionid: {session_id}')
+    print(f'ブラウザのsessionid: {session_id}')
     if session_id is None or not get_session(session_id):
+        print('ブラウザのセッションとデータベースのセッションが違った')
         return False
     else:
-        user_id = get_session(session_id)[1]
+        user_id = get_session(session_id)[2]
+        print(f'user_id: {user_id}')
         user = get_gmail(user_id)
         if user is None:
             raise HTTPException(
@@ -72,6 +74,7 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
 # データベース関係
 # セッションの取得
 def get_session(session_id: str):
+    print(f'ブラウザのsessionid: {session_id}')
     from .main import get_db_connection
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -80,6 +83,7 @@ def get_session(session_id: str):
         cursor.execute(query, (session_id,))
         session = cursor.fetchone()
         if session is None:
+            print('データベースにuser_auth_idがありませんでした。')
             return
         else:
             return session
@@ -104,6 +108,26 @@ def add_session(session_id: str, user_id: int):
     except mysql.connector.Error as err:
         conn.rollback()
         print(f"Error adding session: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+
+# アンケートに答えたかどうかの判別
+def answerd_survey(user_id: int):
+    from .main import get_db_connection
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = "SELECT * FROM survey WHERE userid = (%s)"
+        cursor.execute(query, (user_id))
+        result = cursor.fetchone()
+        if result is None:
+            return False
+        else:
+            return True
+    except mysql.connector.Error as err:
+        print(f"Error getting user from surcey: {err}")
+        return None
     finally:
         cursor.close()
         conn.close()
@@ -178,6 +202,9 @@ async def login_callback(code: str = Query(...)):
     # セッションIDの生成と user_auth への登録
     session_id = create_session_id()
     add_session(session_id, user_id)
+
+    if not answerd_survey(user_id):
+        redirect_url = "http://localhost:3000/QuestionPage"
 
     response = RedirectResponse(url=redirect_url)
 
