@@ -122,6 +122,7 @@ embeddings_np /= np.linalg.norm(embeddings_np, axis=1, keepdims=True)
 
 # FAISS のインデックスを作成（ここでは L2 距離を用いた平坦なインデックス）
 dim = embeddings_np.shape[1]  # 埋め込みベクトルの次元数
+
 # FAISS のインデックスを作成（内積ベース）
 index = faiss.IndexFlatIP(dim)
 
