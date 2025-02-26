@@ -121,6 +121,12 @@ async def login():
     )
     return {"auth_url": auth_url}
 
+# ログアウト
+@router.get("/logout")
+async def logout(response: Response):
+    response.delete_cookie("session_id")
+    return None
+
 # ログイン後に呼び出されるコールバック
 @router.get("/login/callback/")
 async def login_callback(code: str = Query(...)):
