@@ -3,13 +3,15 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 const QuestionPage: React.FC = () => {
   const [formData, setFormData] = useState({
-    name: "",
+    business: "",
     age: "",
-    satisfaction: "3", // デフォルト値
+    gender: "",
     comment: "",
   });
 
+  const options = ["男性", "女性", "その他"];
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
   // 入力変更時の処理
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -24,29 +26,23 @@ const QuestionPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+    if (!formData.gender) {
+        setError("性別を選択してください");
+        return;
+    }
+    setError("");
+    setSubmitted(true);
   };
 
   return (
     <div className="container mt-5">
-      <h2 className="mb-4">アンケートフォーム</h2>
+      <h1 className="mb-4">アンケート</h1>
+      <h4 className="mb-4">閲覧したい記事についてはできるだけ詳しく回答してください</h4>
 
       {!submitted ? (
         <form onSubmit={handleSubmit}>
-          {/* 名前入力 */}
-          <div className="mb-3">
-            <label className="form-label">名前</label>
-            <input
-              type="text"
-              className="form-control"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          {/* 年齢入力 */}
-          <div className="mb-3">
+        {/* 年齢入力 */}
+        <div className="mb-3">
             <label className="form-label">年齢</label>
             <input
               type="number"
@@ -58,28 +54,42 @@ const QuestionPage: React.FC = () => {
             />
           </div>
 
-          {/* 満足度（ラジオボタン） */}
+          {/* 職業入力 */}
           <div className="mb-3">
-            <label className="form-label">満足度（1〜5）</label>
+            <label className="form-label">職業</label>
+            <input
+              type="text"
+              className="form-control"
+              name="name"
+              value={formData.business}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          {/* 性別（ラジオボタン） */}
+          <div className="mb-3">
+            <label className="form-label">性別</label>
             <div>
-              {[1, 2, 3, 4, 5].map((num) => (
-                <label key={num} className="me-3">
+              {options.map((option) => (
+                <label key={option} className="me-3">
                   <input
                     type="radio"
-                    name="satisfaction"
-                    value={num.toString()}
-                    checked={formData.satisfaction === num.toString()}
+                    name="gender"
+                    value={option}
+                    checked={formData.gender === option}
                     onChange={handleChange}
                   />{" "}
-                  {num}
+                  {option}
                 </label>
               ))}
             </div>
+            
           </div>
 
-          {/* コメント */}
+          {/* 閲覧したい記事について入力 */}
           <div className="mb-3">
-            <label className="form-label">コメント</label>
+            <label className="form-label">閲覧したい記事について</label>
             <textarea
               className="form-control"
               name="comment"
@@ -97,10 +107,10 @@ const QuestionPage: React.FC = () => {
         // 送信後の表示
         <div className="mt-4">
           <h4>送信ありがとうございました！</h4>
-          <p><strong>名前:</strong> {formData.name}</p>
+          <p><strong>職業:</strong> {formData.business}</p>
           <p><strong>年齢:</strong> {formData.age}</p>
-          <p><strong>満足度:</strong> {formData.satisfaction}</p>
-          <p><strong>コメント:</strong> {formData.comment || "なし"}</p>
+          <p><strong>性別:</strong> {formData.gender}</p>
+          <p><strong>閲覧したい記事について:</strong> {formData.comment || "なし"}</p>
           <button className="btn btn-secondary mt-3" onClick={() => setSubmitted(false)}>
             再入力
           </button>
