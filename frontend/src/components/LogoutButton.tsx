@@ -1,5 +1,6 @@
 // LogoutButton.tsx
 import React from "react";
+import "../pages/TopPage/TopPage.css";
 
 interface LogoutButtonProps {
     onLogout?: () => void;
@@ -17,23 +18,7 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({ onLogout }) => {
     return (
         <button
             onClick={handleLogout}
-            className="btn"
-            style={{
-                backgroundColor: "rgba(255, 255, 255, 0.2)",
-                color: "#fff",
-                border: "none",
-                padding: "8px 16px",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "0.9rem",
-                transition: "background-color 0.3s ease",
-            }}
-            onMouseEnter={(e) => 
-                (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.3)")
-            }
-            onMouseLeave={(e) => 
-                (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)")
-            }
+            className="common-button"
         >
             ログアウト
         </button>
