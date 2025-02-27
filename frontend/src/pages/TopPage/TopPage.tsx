@@ -1,7 +1,6 @@
-// TopPage.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./TopPage.css";
-import RegisterSiteButton from "../../components/RegisterSiteButton"; // パスは実際のファイル位置に合わせて変更
+import RegisterSiteButton from "../../components/RegisterSiteButton";
 import HeaderButtons from "../../components/HeaderButton";
 
 interface Article {
@@ -23,6 +22,14 @@ const TopPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 現在読み上げ中かどうか
+  const [isPlaying, setIsPlaying] = useState(false);
+  // どの記事を読み上げ中か（記事ID）
+  const [readingArticleId, setReadingArticleId] = useState<number | null>(null);
+  // 現在の読み上げに使う SpeechSynthesisUtterance を保持
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  // 記事一覧の取得
   useEffect(() => {
     const fetchArticles = async () => {
       try {
@@ -52,7 +59,7 @@ const TopPage: React.FC = () => {
     fetchArticles();
   }, []);
 
-  // 記事クリック時のログ登録処理
+  // カードをクリックしたら記事URLを新規タブで開く + ログ登録
   const handleCardClick = async (articleId: number, url: string) => {
     try {
       const response = await fetch(LOG_API_URL, {
@@ -74,6 +81,47 @@ const TopPage: React.FC = () => {
     }
   };
 
+  // 「読み上げ／停止」ボタンのクリック処理
+  const handleSpeechToggle = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    articleId: number,
+    textToRead: string
+  ) => {
+    // カード全体へのクリックイベント（URLを開く処理）を止める
+    e.stopPropagation();
+
+    // すでに同じ記事を読み上げ中なら停止
+    if (isPlaying && readingArticleId === articleId) {
+      window.speechSynthesis.cancel();
+      setIsPlaying(false);
+      setReadingArticleId(null);
+      return;
+    }
+
+    // 別の記事を読み上げ中の場合もキャンセル
+    if (isPlaying && readingArticleId !== articleId) {
+      window.speechSynthesis.cancel();
+    }
+
+    // 新しく読み上げ開始
+    const utterance = new SpeechSynthesisUtterance(textToRead);
+    utterance.lang = "ja-JP";
+    utterance.onend = () => {
+      // 再生終了時にステートを戻す
+      setIsPlaying(false);
+      setReadingArticleId(null);
+    };
+
+    // いったん現在の読み上げはキャンセルしてから再生
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+
+    // State更新
+    utteranceRef.current = utterance;
+    setIsPlaying(true);
+    setReadingArticleId(articleId);
+  };
+
   if (loading) return <p className="loading">ローディング中...</p>;
   if (error) return <p className="error">エラー: {error}</p>;
 
@@ -93,10 +141,11 @@ const TopPage: React.FC = () => {
       <div className="registration">
         <h1 className="sakuhinmei">InfoCompass</h1>
       </div>
-      
+
       <nav className="menu-bar">
         <HeaderButtons />
       </nav>
+
       <div className="articles">
         {articles.map((article) => (
           <div
@@ -114,9 +163,21 @@ const TopPage: React.FC = () => {
             </div>
             <div className="summary50words">
               <p>{article.summary150}</p>
-
             </div>
-            
+
+            {/* ▼ ここに再生/停止ボタンを追加 ▼ */}
+            <button
+              onClick={(e) =>
+                handleSpeechToggle(e, article.id, article.summary150)
+              }
+              style={{
+                marginTop: "8px",
+                padding: "6px 12px",
+                cursor: "pointer",
+              }}
+            >
+              {isPlaying && readingArticleId === article.id ? "停止" : "読み上げ"}
+            </button>
           </div>
         ))}
       </div>
