@@ -45,7 +45,6 @@ const RegisterSiteButton: React.FC = () => {
   return (
     <div
       style={{
-        margin: "20px",
         zIndex: 1000,
       }}
     >

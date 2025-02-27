@@ -1,39 +1,59 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 
+interface QuestionPageProps {
+  mode: "new" | "edit";
+}
+
 const QuestionPage: React.FC = () => {
+  const location = useLocation();
+  const mode = (location.state as { mode?: "new" | "edit" } | null)?.mode || "new";
   const [formData, setFormData] = useState({
     age: "",
     job: "",
     gender: "",
     comment: "",
   });
-
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
-
   const options = ["男性", "女性", "その他"];
 
-  // 入力変更時の処理
+  // 編集モードの場合、FastAPIから既存のプロフィールデータを取得
+  useEffect(() => {
+    console.log("モード", mode);
+    if (mode === "edit") {
+      const fetchProfile = async () => {
+        try {
+          const response = await fetch("http://localhost:4000/profile", {
+            credentials: "include",
+          });
+          if (!response.ok) throw new Error("プロフィール取得エラー");
+          const data = await response.json();
+          console.log("プロフィールデータ:", data);
+          setFormData({
+            age: data.age ? data.age.toString() : "",
+            job: data.job || "",
+            gender: data.gender || "",
+            comment: data.comment || "",
+          });
+        } catch (error) {
+          console.error(error);
+        }
+      };
+      fetchProfile();
+    }
+  }, [mode]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // 入力時にエラーメッセージをクリア
-    setErrors((prev) => ({
-      ...prev,
-      [name]: "",
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // 送信時の処理（バリデーションチェック）
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const newErrors: { [key: string]: string } = {};
     if (!formData.age) newErrors.age = "年齢を入力してください";
     if (!formData.job) newErrors.job = "職業を入力してください";
@@ -44,31 +64,24 @@ const QuestionPage: React.FC = () => {
       setErrors(newErrors);
       return;
     }
-
     setLoading(true);
 
     const sendData = {
-      userid: 0,  // バックエンド側で current_user に置き換えられるのでダミー
+      userid: 0,  // バックエンドで current_user に置き換え
       age: parseInt(formData.age, 10),
       gender: formData.gender,
       job: formData.job,
       preferred_article_detail: formData.comment,
     };
 
-    console.log("送信データ:", sendData);
-
     try {
       const response = await fetch("http://localhost:4000/regist_survey", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Cookie を含める (認証済みユーザーの情報を送る)
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(sendData),
       });
-
       if (response.ok) {
-        // 挿入が完了したら TopPage にリダイレクト
         window.location.href = "http://localhost:3000/TopPage";
       } else {
         const data = await response.json();
@@ -104,12 +117,10 @@ const QuestionPage: React.FC = () => {
             閲覧したい記事についてはできる限り詳しく回答してください
           </p>
         </div>
-
         <div className="row gx-5 justify-content-center">
           <div className="col-lg-6">
             {!submitted ? (
               <form onSubmit={handleSubmit}>
-                {/* 年齢入力 */}
                 <div className="form-floating mb-4">
                   <input
                     className="form-control"
@@ -122,8 +133,6 @@ const QuestionPage: React.FC = () => {
                   <label htmlFor="age">年齢</label>
                   {errors.age && <p className="text-danger">{errors.age}</p>}
                 </div>
-
-                {/* 職業入力 */}
                 <div className="form-floating mb-4">
                   <input
                     className="form-control"
@@ -136,8 +145,6 @@ const QuestionPage: React.FC = () => {
                   <label htmlFor="job">職業</label>
                   {errors.job && <p className="text-danger">{errors.job}</p>}
                 </div>
-
-                {/* 性別（ラジオボタン） */}
                 <div className="mb-4">
                   <label className="form-label">性別</label>
                   <div>
@@ -156,8 +163,6 @@ const QuestionPage: React.FC = () => {
                   </div>
                   {errors.gender && <p className="text-danger">{errors.gender}</p>}
                 </div>
-
-                {/* 閲覧したい記事について */}
                 <div className="form-floating mb-3">
                   <textarea
                     className="form-control"
@@ -170,10 +175,8 @@ const QuestionPage: React.FC = () => {
                   <label htmlFor="comment">閲覧したい記事について</label>
                   {errors.comment && <p className="text-danger">{errors.comment}</p>}
                 </div>
-
-                {/* 送信ボタン */}
                 <div className="d-grid">
-                  <button className="btn btn-primary btn-lg" type="submit">
+                  <button className="btn btn-primary btn-lg" type="submit" disabled={loading}>
                     送信
                   </button>
                 </div>
@@ -193,10 +196,7 @@ const QuestionPage: React.FC = () => {
                 <p>
                   <strong>閲覧したい記事について:</strong> {formData.comment}
                 </p>
-                <button
-                  className="btn btn-secondary mt-3"
-                  onClick={() => setSubmitted(false)}
-                >
+                <button className="btn btn-secondary mt-3" onClick={() => setSubmitted(false)}>
                   再入力
                 </button>
               </div>
