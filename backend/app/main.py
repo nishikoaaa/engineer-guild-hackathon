@@ -300,7 +300,7 @@ def recommend(current_user: Any = Depends(auth.get_current_user)):
     # LLMに好みからジャンルキーワードのみ抽出させる
     messages = [
         SystemMessage(content="あなたは、ユーザーの好みの文章から関連するジャンルキーワードを抽出するアシスタントです。"),
-        HumanMessage(content=f"{preferred_article_detail}に関連するジャンルの単語のみを出力して。")
+        HumanMessage(content=f"{preferred_article_detail}に関連、または含まれるジャンルの単語のみを出力して。")
     ]
     llm_response = llm(messages)  # ここでLLMが応答
     genre_keywords = llm_response.content.strip()  # 例: "技術, AI, IoT"

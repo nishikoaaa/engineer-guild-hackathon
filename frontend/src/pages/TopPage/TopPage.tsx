@@ -17,7 +17,6 @@ interface Article {
 
 const API_URL = "http://localhost:4000/TopPage";
 const LOG_API_URL = "http://localhost:4000/log_read";
-const LOGOUT_URL = "http://localhost:4000/logout";
 
 const TopPage: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
