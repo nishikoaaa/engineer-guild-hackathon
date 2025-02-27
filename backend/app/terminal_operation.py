@@ -8,5 +8,6 @@ while True:
     # file2.py を実行
     subprocess.run(["python", "/app/app/embedd.py"], check=True)
     print("embedd.pyを実行しました。")
+    print("今日の記事をすべて取得しました。")
     # 24時間待機（86400秒）
     time.sleep(86400)

@@ -94,7 +94,7 @@ def generate_basic_info_node(state: State, config) -> State:
     state["basic_attempt"] = state.get("basic_attempt", 0) + 1
     print(f"[generate_basic_info] 試行回数 {state['basic_attempt']} 回目、URL: {state['url']}")
     llm = ChatOpenAI(
-        model_name="gpt-4o-mini-2024-07-18",
+        model_name="gpt-4o",
         temperature=0,
         openai_api_key=OPENAI_API_KEY
     )
@@ -102,7 +102,7 @@ def generate_basic_info_node(state: State, config) -> State:
         SystemMessage(
             content=(
                 "以下の文章から、記事のタイトル、150文字程度の要約、公開日時を抽出してください。"
-                "150程度の要約文は150字程度で確実に書かれているかを確認するため、プログラムで150字程度になっているかカウントしてください"
+                "なお、もしこの記事が日本語で書かれていない場合は、出力を '日本語の記事ではありません。' としてください。"
                 "出力はJSON形式で、キーは 'title', 'summary', 'published_date' としてください。"
                 "例: {"
                 "\"title\": \"サンプルタイトル\", "
@@ -117,6 +117,11 @@ def generate_basic_info_node(state: State, config) -> State:
     messages = formatted_prompt.to_messages()
     result = llm.invoke(messages)
     raw_output = result.content.strip()
+    # もし生成AIの出力に「日本語の記事ではありません」が含まれていれば、スキップとする
+    if "日本語の記事ではありません" in raw_output:
+        state["basic_status"] = "skip"
+        print("[generate_basic_info] 記事が日本語ではないため、基本情報生成をスキップします。")
+        return state
     json_text = re.sub(r"^```(?:json)?\s*", "", raw_output)
     json_text = re.sub(r"\s*```$", "", json_text)
     try:
@@ -136,6 +141,10 @@ def generate_basic_info_node(state: State, config) -> State:
 # Node: 基本情報の評価（公開日時の妥当性チェック）
 # ------------------------------
 def evaluate_basic_info_node(state: State, config) -> State:
+    # もし基本情報生成でスキップ状態なら評価もスキップ
+    if state.get("basic_status") == "skip":
+        print("[evaluate_basic_info] 記事が日本語ではないため、評価をスキップします。")
+        return state
     basic_info = state.get("basic_info", {})
     pub_date = basic_info.get("published_date", "")
     try:
@@ -155,7 +164,7 @@ def generate_detailed_summary_node(state: State, config) -> State:
     state["detailed_attempt"] = state.get("detailed_attempt", 0) + 1
     print(f"[generate_detailed_summary] 試行回数 {state['detailed_attempt']} 回目、URL: {state['url']}")
     llm = ChatOpenAI(
-        model_name="gpt-4o-mini-2024-07-18",
+        model_name="gpt-4o",
         temperature=0,
         openai_api_key=OPENAI_API_KEY
     )

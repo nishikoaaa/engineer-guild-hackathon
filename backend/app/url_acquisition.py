@@ -108,14 +108,34 @@ def main():
     for source_id, platform_url in source_url_dict.items():
         print(f"処理中のプラットフォームID: {source_id}, URL: {platform_url}")
         new_urls = insert_new_urls_for_platform(source_id, platform_url)
-        total_new = len(new_urls)
+        filtered_urls = []
+        print("公開日時を検索します。")
+        for url in new_urls:
+            try:
+                # getdate.py を引数付きで実行し、出力結果を取得
+                result = subprocess.run(
+                    ["python", "getdate.py", url],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                output = result.stdout.strip()
+                if "記事は今日から3日以内に公開されています" in output:
+                    filtered_urls.append(url)
+                else:
+                    print(f"→ このURLは3日以内ではないため除外されます。")
+            except subprocess.CalledProcessError as e:
+                print(f"URLの処理中にエラーが発生しました: {url}\nエラー内容: {e}")
+
+        # 全てのURL処理後に、filtered_urls の件数を取得
+        total_new = len(filtered_urls)
         print(f"このプラットフォームで新規記事URLは {total_new} 件です。")
         
-        for idx, article_url in enumerate(new_urls, start=1):
+        for idx, article_url in enumerate(filtered_urls, start=1):
             remaining = total_new - idx
             print(f"【進捗】{idx} 件目の記事URLを処理中。残り未実行URL数: {remaining} 件")
             subprocess.run(["python", "web_Acquisition.py", article_url])
-            if idx >= 30:
+            if idx >= 20:
                 break
 
 if __name__ == "__main__":
