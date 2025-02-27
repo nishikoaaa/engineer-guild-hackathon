@@ -1,13 +1,12 @@
-// RegisterSiteButton.tsx
 import React, { useState } from "react";
 
 const RegisterSiteButton: React.FC = () => {
   const [showInput, setShowInput] = useState(false);
-  const [urlInput, setUrlInput] = useState<string>("");
+  const [urlInput, setUrlInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resultMessage, setResultMessage] = useState<string>("");
+  const [resultMessage, setResultMessage] = useState("");
 
-  const handleButtonClick = () => {
+  const handleRegisterClick = () => {
     setShowInput(true);
   };
 
@@ -26,6 +25,7 @@ const RegisterSiteButton: React.FC = () => {
       const response = await fetch("http://localhost:4000/regist_favorite_site", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ url: urlInput.trim() }),
       });
       if (!response.ok) {
@@ -43,14 +43,14 @@ const RegisterSiteButton: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        margin: "20px",
-        zIndex: 1000,
-      }}
-    >
+    // 外側の div の余白を削除または縮小
+    <div style={{ margin: "0", zIndex: 1000 }}>
       {showInput ? (
-        <form onSubmit={handleSubmit} style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <form
+          onSubmit={handleSubmit}
+          className="dropdown-item"
+          style={{ maxWidth: "250px", width: "100%" }} // 幅を制限
+        >
           <input
             type="url"
             placeholder="https://example.com"
@@ -61,6 +61,7 @@ const RegisterSiteButton: React.FC = () => {
               borderRadius: "4px",
               border: "1px solid #ccc",
               fontSize: "1rem",
+              width: "100%",
             }}
             required
           />
@@ -76,32 +77,26 @@ const RegisterSiteButton: React.FC = () => {
               cursor: "pointer",
               boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
               transition: "background-color 0.3s, transform 0.3s",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f0f0f0";
-              (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.05)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#fff";
-              (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+              marginTop: "0.5rem",
             }}
             disabled={loading}
           >
             {loading ? "登録中..." : "送信"}
           </button>
+          {resultMessage && (
+            <p style={{ color: resultMessage === "登録できました" ? "green" : "red", marginTop: "0.5rem" }}>
+              {resultMessage}
+            </p>
+          )}
         </form>
       ) : (
-        <button
-          onClick={handleButtonClick}
-          className="common-button"
+        <span
+          className="dropdown-item"
+          style={{ cursor: "pointer" }}
+          onClick={handleRegisterClick}
         >
           サイトを登録する
-        </button>
-      )}
-      {resultMessage && (
-        <p style={{ color: resultMessage === "登録できました" ? "green" : "red", marginTop: "0.5rem" }}>
-          {resultMessage}
-        </p>
+        </span>
       )}
     </div>
   );
