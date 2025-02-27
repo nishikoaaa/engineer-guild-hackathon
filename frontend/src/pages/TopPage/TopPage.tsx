@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import "./TopPage.css";
 import HeaderButtons from "../../components/HeaderButton";
+import logo from "../../assets/logo.png";
+
 
 interface Article {
   id: number;
@@ -82,6 +84,9 @@ const TopPage: React.FC = () => {
 
   return (
     <div className="TopPage">
+      <div className="logo-container">
+        <img src={logo} alt="Logo" className="logo" />
+      </div>
       <div className="registration">
         <h1 className="sakuhinmei">InfoCompass</h1>
       </div>

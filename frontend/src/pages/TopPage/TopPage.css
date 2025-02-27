@@ -125,3 +125,11 @@ body {
 .dropdown-item:hover {
   background-color: rgba(0,0,0,0.05);
 }
+
+/* ロゴ用 */
+.logo {
+  max-width: 60px; /* お好みでサイズを調整 */
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
