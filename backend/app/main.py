@@ -447,6 +447,13 @@ def regist_survey(
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        query = "DELETE FROM survey WHERE userid = (%s)"
+        cursor.execute(query, (user_id,))
+        conn.commit()
+    except mysql.connector.Error as err:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database delete error: {err}")
+    try:
         query = (
             "INSERT INTO survey (userid, age, gender, job, preferred_article_detail) "
             "VALUES (%s, %s, %s, %s, %s)"
