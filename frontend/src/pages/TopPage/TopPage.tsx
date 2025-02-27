@@ -174,7 +174,7 @@ const TopPage: React.FC = () => {
             </div>
             <div className="articlemain">
               <h2 className="title">{article.title}</h2>
-              <div className="picture">syashinn</div>
+              {/* <div className="picture">syashinn</div> */}
             </div>
             <div className="summary50words">
               <p>{article.summary150}</p>
