@@ -4,6 +4,8 @@ import RegisterSiteButton from "../../components/RegisterSiteButton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlay, faStop } from "@fortawesome/free-solid-svg-icons";
 import HeaderButtons from "../../components/HeaderButton";
+import logo from "../../assets/hackicon.png";
+
 
 interface Article {
   id: number;
@@ -150,7 +152,8 @@ const TopPage: React.FC = () => {
       }}
     >
       <div className="registration">
-        <h1 className="sakuhinmei">InfoCompass</h1>
+        <img src={logo} alt="Logo" className="logo" />
+        <h1 className="sakuhinmei">SummaryMan</h1>
       </div>
 
       <nav className="menu-bar">
