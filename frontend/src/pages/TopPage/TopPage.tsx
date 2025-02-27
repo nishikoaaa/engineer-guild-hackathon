@@ -74,7 +74,15 @@ const TopPage: React.FC = () => {
     }
   };
 
-  if (loading) return <p className="loading">ローディング中...</p>;
+  if (loading) return(
+    <div className="background">
+      <div className="spinner-box">
+        <div className="circle-border">
+          <div className="circle-core"></div>
+        </div>
+      </div>
+    </div>
+  );
   if (error) return <p className="error">エラー: {error}</p>;
 
   return (
