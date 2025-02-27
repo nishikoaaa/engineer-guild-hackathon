@@ -47,9 +47,6 @@ const RegisterSiteButton: React.FC = () => {
       style={{
         margin: "20px",
         zIndex: 1000,
-        backgroundColor: "rgba(255,255,255,0.9)",
-        padding: "1rem",
-        borderRadius: "10px",
       }}
     >
       {showInput ? (
@@ -95,18 +92,8 @@ const RegisterSiteButton: React.FC = () => {
         </form>
       ) : (
         <button
-          style={{
-            padding: "0.8rem 1.5rem",
-            fontSize: "1rem",
-            borderRadius: "20px",
-            border: "none",
-            backgroundColor: "#fff",
-            color: "#182848",
-            cursor: "pointer",
-            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-            transition: "background-color 0.3s, transform 0.3s",
-          }}
           onClick={handleButtonClick}
+          className="common-button"
         >
           サイトを登録する
         </button>
