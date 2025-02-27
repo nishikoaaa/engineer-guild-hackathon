@@ -1,7 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "../pages/Welcome.css"
+import { useFlash } from "../contexts/FlashProvider";
 
 const WelcomePage: React.FC = () => {
+  const { showFlash } = useFlash();
+
+  useEffect(() => {
+    const flashData = sessionStorage.getItem("flashMessage");
+    if (flashData) {
+      const { message, type, duration } = JSON.parse(flashData);
+      showFlash(message, type, duration);
+      sessionStorage.removeItem("flashMessage");
+    }
+  }, [showFlash]);
+
   // Get Started ボタンがクリックされたときの処理
   const handleGetStarted = async () => {
     try {
