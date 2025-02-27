@@ -59,12 +59,14 @@ def read_articles():
         cursor = conn.cursor(dictionary=True)
         cursor.execute(
             "SELECT id, title, summary150, summary1000, content, url, published_date, created_at "
-            "FROM article ORDER BY published_date DESC"
+            "FROM article "
+            "WHERE published_date >= DATE_SUB(NOW(), INTERVAL 3 DAY) "
+            "ORDER BY published_date DESC"
         )
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
-
+        
         print(f'rows: {rows}')
         
         # データを article_list に格納
