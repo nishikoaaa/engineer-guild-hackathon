@@ -31,7 +31,6 @@ const TopPage: React.FC = () => {
           mode: "cors",
         });
         if (response.status === 401) {
-          // 未認証の場合、ログインページに遷移
           window.location.href = "http://localhost:3000";
           return;
         }
@@ -50,7 +49,7 @@ const TopPage: React.FC = () => {
     fetchArticles();
   }, []);
 
-  // 記事クリック時のログ登録処理
+  // 記事クリック時のログ登録処理と記事遷移
   const handleLogRead = async (articleId: number) => {
     try {
       const response = await fetch(LOG_API_URL, {
@@ -70,7 +69,15 @@ const TopPage: React.FC = () => {
     }
   };
 
-  if (loading) return <p className="loading">ローディング中...</p>;
+  if (loading)
+    return (
+      <div className="loading-container">
+        <div className="spinner-border text-light spinner-large" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <div className="loading-text">ローディング中です</div>
+      </div>
+    );
   if (error) return <p className="error">エラー: {error}</p>;
 
   return (
@@ -99,7 +106,6 @@ const TopPage: React.FC = () => {
             </div>
             <div className="articlemain">
               <h2 className="title">{article.title}</h2>
-              <div className="picture">syashinn</div>
             </div>
             <div className="summary50words">
               <p>{article.summary150}</p>
