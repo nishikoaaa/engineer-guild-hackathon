@@ -134,6 +134,7 @@ const TopPage: React.FC = () => {
           <div className="circle-core"></div>
         </div>
       </div>
+      <p className="loading-text">ローディング中です</p>
     </div>
   );
 
