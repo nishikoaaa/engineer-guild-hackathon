@@ -196,6 +196,14 @@ class SurveyIn(BaseModel):
     job: str
     preferred_article_detail: str
 
+#userの閲覧記事のログ
+class Browsing_History(BaseModel):
+    id: int
+    userid: int
+    articleid: int
+    readat: str
+
+
 #############################################################
 
 # ユーザーごとにレコメンドするエンドポイント
@@ -252,6 +260,24 @@ def search_articles(query_text, k=10):
     index = faiss.read_index("/app/app/index_data/faiss_index.faiss")
     distances, indices = index.search(query_np, k)
     return distances[0], indices[0]
+
+def browsing_log(user_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        # [CHANGED] SQL文にスペースとWHERE句を追加し、user_idでフィルタリングするように変更
+        query = (
+            "SELECT user_id, article_id FROM read_log WHERE user_id = %s"           # ※[CHANGED] user_idでフィルタリングするためWHERE句を追加
+        )
+        cursor.execute(query, (user_id,))
+        rows = cursor.fetchall()  # [CHANGED] 「fechall()」のタイポを修正
+        cursor.close()
+        conn.close()
+        print("browsing_log rows:", rows)
+        return rows
+    except mysql.connector.Error as err:
+        raise Exception(f"Database query error: {err}")
+
 
 #############################################################
 # ルート
@@ -312,22 +338,44 @@ def recommend(current_user: Any = Depends(auth.get_current_user)):
     
     # DBから全記事を取得
     articles = read_articles()
+
+    # ユーザーの既読記事IDを取得（browsing_log関数を呼び出す）
+    print(f"ユーザーID{user_id}")
+    read_log_rows = browsing_log(int(user_id))
+    read_article_ids = [row["article_id"] for row in read_log_rows]
+    print("既読の記事ID:", read_article_ids)
     
     # FAISSのインデックスは記事リストのインデックスに対応していると仮定
+    # 既読の記事は推薦リストに含めない
     recommended = []
     for idx in indices:
         if idx < len(articles):
-            recommended.append(articles[idx])
+            article = articles[idx]
+            # [CHANGED] 安全に記事IDを取得するため、キーが存在しない場合の対策を追加
+            article_id = article.get("article_id")
+            if article_id is None:
+                # もしarticle_idキーがない場合、代替キー"id"を試す
+                article_id = article.get("id")
+            if article_id is None:
+                print("Article does not have 'article_id' or 'id', skipping:", article)  # ※[CHANGED]
+                continue  # ※[CHANGED]
+            if article_id not in read_article_ids:
+                recommended.append(article)
     
     print(f"推薦記事件数: {len(recommended)}")
-    print(f'recommended: {recommended}')
+    #print(f'recommended: {recommended}')
     return JSONResponse(content=recommended, media_type="application/json; charset=utf-8")
 
 
 # 既読エンドポンイト
 @app.post("/log_read")
 def log_read_event(log: ReadLogIn, current_user: Any = Depends(auth.get_current_user)):
-    inserted_id = insert_read_log(log.user_id, log.article_id)
+    if not current_user:
+        print("ユーザーの取得に失敗しました")
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    # current_userからユーザーIDを取得（get_gmailの戻り値に合わせる）
+    user_id = current_user[0]
+    inserted_id = insert_read_log(user_id, log.article_id)
     if inserted_id is None:
         raise HTTPException(status_code=401, detail="Failed to insert read log")
     return JSONResponse(
