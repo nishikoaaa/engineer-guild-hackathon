@@ -110,6 +110,7 @@ const TopPage: React.FC = () => {
     // 新しく読み上げ開始
     const utterance = new SpeechSynthesisUtterance(textToRead);
     utterance.lang = "ja-JP";
+    utterance.rate = 2.0;  // 2倍速に設定
     utterance.onend = () => {
       // 再生終了時にステートを戻す
       setIsPlaying(false);
