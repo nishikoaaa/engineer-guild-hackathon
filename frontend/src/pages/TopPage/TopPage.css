@@ -32,7 +32,20 @@ html {
     padding: 20px;
 }
 
+.common-button {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease;
+}
 
+.common-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
 
 .article-card {
     width: calc(50% - 20px);
@@ -129,4 +142,3 @@ h2 {
   .readlink:hover .underline {
     transform: scaleX(1);
   }
-  

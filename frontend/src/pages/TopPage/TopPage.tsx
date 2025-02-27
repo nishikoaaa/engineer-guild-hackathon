@@ -89,9 +89,12 @@ const TopPage: React.FC = () => {
       }}
     >
       <div className="registration">
-        <h1 className="sakuhinmei">TopPageです</h1>
+        <h1 className="sakuhinmei">InfoCompass</h1>
       </div>
-      <HeaderButtons />
+      
+      <nav className="menu-bar">
+        <HeaderButtons />
+      </nav>
       <div className="articles">
         {articles.map((article) => (
           <div key={article.id} className="article-card">

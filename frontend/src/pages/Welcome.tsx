@@ -5,7 +5,10 @@ const WelcomePage: React.FC = () => {
   // Get Started ボタンがクリックされたときの処理
   const handleGetStarted = async () => {
     try {
-      const response = await fetch("http://localhost:4000/login");
+      const response = await fetch("http://localhost:4000/login", {
+        method: "GET",
+        credentials: "include",
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -31,10 +34,10 @@ const WelcomePage: React.FC = () => {
         <li></li>
       </ul>
         <h1 style={{ fontSize: "3rem", marginBottom: "1rem" }}>
-          TechShift
+        InfoCompass
         </h1>
         <p style={{ fontSize: "1.5rem", maxWidth: "800px", marginBottom: "2rem" }}>
-          忙しい毎日を送るあなたへ――『TechShift』は、ネット上に散らばる最新技術ニュースや情報を自動で集約・要約し、
+          忙しい毎日を送るあなたへ――『InfoCompass』は、ネット上に散らばる最新技術ニュースや情報を自動で集約・要約し、
           <br />
           あなたに本当に必要な情報だけを厳選してお届けする新感覚プラットフォームです。<br />
           学生や社会人の情報収集の手間を大幅に軽減し、技術への情熱をさらに高めるための最適なツールとして、
