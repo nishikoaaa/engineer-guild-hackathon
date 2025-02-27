@@ -332,18 +332,20 @@ def recommend(current_user: Any = Depends(auth.get_current_user)):
     genre_keywords = llm_response.content.strip()  # 例: "技術, AI, IoT"
     print("抽出されたジャンルキーワード:", genre_keywords)
     print(type(genre_keywords))
-    
-    # FAISSで類似検索（上位10件）
-    distances, indices = search_articles(genre_keywords, k=10)
-    
-    # DBから全記事を取得
-    articles = read_articles()
 
     # ユーザーの既読記事IDを取得（browsing_log関数を呼び出す）
     print(f"ユーザーID{user_id}")
     read_log_rows = browsing_log(int(user_id))
     read_article_ids = [row["article_id"] for row in read_log_rows]
     print("既読の記事ID:", read_article_ids)
+
+    # FAISSで類似検索（上位10件）
+    distances, indices = search_articles(genre_keywords, k=9+len(read_article_ids))
+    
+    # DBから全記事を取得
+    articles = read_articles()
+
+
     
     # FAISSのインデックスは記事リストのインデックスに対応していると仮定
     # 既読の記事は推薦リストに含めない
