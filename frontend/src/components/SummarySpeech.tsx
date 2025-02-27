@@ -2,9 +2,12 @@ import React, { useState, useEffect } from "react";
 
 const SummarySpeech: React.FC = () => {
     const [text, setText] = useState<string>("");
-    const [rate, setRate] = useState<number>(1.5); // 内部的な実際の再生速度
+    const [rate, setRate] = useState<number>(1.5); // 1.5倍を1.0倍として扱う
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
+    const [currentCharIndex, setCurrentCharIndex] = useState<number>(0);
+    const [pendingRateChange, setPendingRateChange] = useState<boolean>(false);
     const synth = window.speechSynthesis;
+    let utterance: SpeechSynthesisUtterance | null = null;
 
     // `public/sample.txt` からテキストを取得
     useEffect(() => {
@@ -14,46 +17,70 @@ const SummarySpeech: React.FC = () => {
             .catch((error) => console.error("テキストの読み込みに失敗:", error));
     }, []);
 
-    // 再生・停止の切り替え
-    const toggleSpeech = () => {
-        if (isPlaying) {
-            stopSpeech();
-        } else {
-            startSpeech();
-        }
-    };
-
-    // 音声再生
-    const startSpeech = () => {
+    // **再生**
+    const startSpeech = (resumeFromIndex = 0) => {
         if (!text) return;
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "ja-JP";
-        utterance.rate = rate;
-        utterance.onend = () => setIsPlaying(false);
-        utterance.onerror = () => setIsPlaying(false);
+        synth.cancel();
 
-        synth.speak(utterance);
-        setIsPlaying(true);
+        setTimeout(() => {
+            utterance = new SpeechSynthesisUtterance(text.slice(resumeFromIndex));
+            utterance.lang = "ja-JP";
+            utterance.rate = rate;
+
+            utterance.onboundary = (event) => {
+                setCurrentCharIndex(resumeFromIndex + event.charIndex);
+            };
+
+            utterance.onend = () => {
+                setIsPlaying(false);
+                setCurrentCharIndex(0);
+            };
+
+            utterance.onerror = () => setIsPlaying(false);
+
+            synth.speak(utterance);
+            setIsPlaying(true);
+        }, 200);
     };
 
-    // 停止機能（停止後は最初から再生）
+    // **停止**
     const stopSpeech = () => {
         synth.cancel();
         setIsPlaying(false);
     };
 
-    // 倍速変更（表示倍率と実際の再生倍率を変換）
-    const rateMapping: { [key: string]: number } = {
-        "0.25x": 0.375,
-        "0.5x": 0.75,
-        "1.0x": 1.5,  // 実際の 1.5x を "1.0x" として表示
-        "1.5x": 2.25,
-        "2.0x": 3.0,
+    // **はじめから**
+    const restartSpeech = () => {
+        synth.cancel();
+        setCurrentCharIndex(0);
+        startSpeech(0);
     };
 
+    // **速度変更（途中から再開）**
     const changeRate = (displayRate: string) => {
-        setRate(rateMapping[displayRate]);
+        const newRate = rateMapping[displayRate];
+
+        stopSpeech();
+        setRate(newRate);
+        setPendingRateChange(true);
+    };
+
+    // **`rate` の変更を監視し、変更完了後に自動で再生**
+    useEffect(() => {
+        if (pendingRateChange) {
+            setPendingRateChange(false);
+            startSpeech(currentCharIndex);
+        }
+    }, [rate]);
+
+    // **速度マッピング（1.5倍を「1.0倍」として扱う）**
+    const rateMapping: { [key: string]: number } = {
+        "1.0x": 1.5,
+        "1.25x": 1.75,
+        "1.5x": 2.0,
+        "1.75x": 2.25,
+        "2.0x": 2.5,
     };
 
     return (
@@ -63,8 +90,11 @@ const SummarySpeech: React.FC = () => {
                 <p>{text || "テキストを読み込み中..."}</p>
             </div>
             <div>
-                <button onClick={toggleSpeech} style={{ margin: "10px" }} disabled={!text}>
+                <button onClick={() => (isPlaying ? stopSpeech() : startSpeech(currentCharIndex))} style={{ margin: "10px" }} disabled={!text}>
                     {isPlaying ? "停止" : "再生"}
+                </button>
+                <button onClick={restartSpeech} style={{ margin: "10px" }} disabled={!text}>
+                    はじめから
                 </button>
             </div>
             <div>
