@@ -467,6 +467,8 @@ def regist_survey(
         media_type="application/json; charset=utf-8"
     )
 
+app.include_router(router)
+
 
 #############################################################
 # テスト用

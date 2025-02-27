@@ -26,6 +26,7 @@ const RegisterSiteButton: React.FC = () => {
       const response = await fetch("http://localhost:4000/regist_favorite_site", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ url: urlInput.trim() }),
       });
       if (!response.ok) {
@@ -34,6 +35,10 @@ const RegisterSiteButton: React.FC = () => {
       setResultMessage("登録できました");
       setUrlInput("");
       setShowInput(false); // 登録成功後にフォームを閉じる
+      // 3秒後にメッセージをクリア
+      setTimeout(() => {
+        setResultMessage("");
+      }, 2000);
     } catch (err: any) {
       console.error("登録エラー:", err.message);
       setResultMessage("登録できませんでした");
