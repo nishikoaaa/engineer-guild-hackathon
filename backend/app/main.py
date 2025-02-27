@@ -25,6 +25,7 @@ router = APIRouter()
 app.include_router(auth.router)
 
 app_env = os.getenv("FASTAPI_ENV", "development")
+
 if app_env == "development":
     allow_credentials = True
     origins = ["http://localhost:3000"]
@@ -51,6 +52,9 @@ llm = ChatOpenAI(
     temperature=0,
     openai_api_key=key
 )
+
+# FAISSインデックスのファイルパス（事前に構築済みのものを読み込む）
+index = faiss.read_index("/app/app/index_data/faiss_index.faiss")
 
 #############################################################
 # データベース関係
@@ -256,8 +260,7 @@ def search_articles(query_text, k=10):
     """
     query_embedding = get_embedding(query_text)
     query_np = np.array([query_embedding]).astype('float32')
-    # FAISSインデックスのファイルパス（事前に構築済みのものを読み込む）
-    index = faiss.read_index("/app/app/index_data/faiss_index.faiss")
+
     distances, indices = index.search(query_np, k)
     return distances[0], indices[0]
 
@@ -340,7 +343,7 @@ def recommend(current_user: Any = Depends(auth.get_current_user)):
     print("既読の記事ID:", read_article_ids)
 
     # FAISSで類似検索（上位10件）
-    distances, indices = search_articles(genre_keywords, k=9+len(read_article_ids))
+    distances, indices = search_articles(genre_keywords, k=10+len(read_article_ids))
     
     # DBから全記事を取得
     articles = read_articles()
@@ -444,6 +447,13 @@ def regist_survey(
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        query = "DELETE FROM survey WHERE userid = (%s)"
+        cursor.execute(query, (user_id,))
+        conn.commit()
+    except mysql.connector.Error as err:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database delete error: {err}")
+    try:
         query = (
             "INSERT INTO survey (userid, age, gender, job, preferred_article_detail) "
             "VALUES (%s, %s, %s, %s, %s)"
@@ -463,6 +473,8 @@ def regist_survey(
         content={"message": "Survey data registered", "id": inserted_id},
         media_type="application/json; charset=utf-8"
     )
+
+app.include_router(router)
 
 
 #############################################################

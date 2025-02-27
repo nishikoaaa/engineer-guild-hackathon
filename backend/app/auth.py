@@ -9,6 +9,7 @@ import secrets
 from typing import Any
 from datetime import datetime, timedelta, timezone
 import mysql
+import json
 
 
 #############################################################
@@ -131,6 +132,26 @@ def answerd_survey(user_id: int):
         cursor.close()
         conn.close()
 
+# アンケート内容の取得
+def get_survey(user_id: int):
+    from .main import get_db_connection
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = "SELECT * FROM survey WHERE userid = (%s)"
+        cursor.execute(query, (user_id,))
+        survey = cursor.fetchone()
+        if survey is None:
+            return None
+        else:
+            return survey
+    except mysql.connector.Error as err:
+        print(f"Error getting survey: {err}")
+        return None
+    finally:
+        cursor.close()
+        conn.close()
+
 #############################################################
 # ルート
 
@@ -209,7 +230,7 @@ async def login_callback(code: str = Query(...)):
 
     # アンケート回答済みかどうかでリダイレクト先を分岐
     if not answerd_survey(user_id):
-        redirect_url = "http://localhost:3000/QuestionPage"
+        redirect_url = "http://localhost:3000/QuestionPage?mode=new"
 
     response = RedirectResponse(url=redirect_url)
 
@@ -223,6 +244,27 @@ async def login_callback(code: str = Query(...)):
     )
 
     return response
+
+# プロフィール情報の更新
+@router.get("/profile")
+async def update_profile(current_user: Any = Depends(get_current_user)):
+    if not current_user:
+        return to_login()
+    survey = get_survey(current_user[0])
+    if survey is None:
+        return JSONResponse(status_code=404, content={"message": "Survey not found"})
+    print(f'アンケート内容: {survey}')
+    survey_json = {
+        "age": survey[2],
+        "job": survey[4],
+        "gender": survey[3],
+        "comment": survey[5]
+    }
+    print(f'アンケート内容: {survey_json}')
+    return survey_json
+    
+    
+    
 
 #　テスト用のルート
 @router.get("/authtest")
