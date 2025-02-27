@@ -2,22 +2,68 @@ import React from "react";
 import RegisterSiteButton from "./RegisterSiteButton";
 import LogoutButton from "./LogoutButton";
 
-const HeaderButtons: React.FC = () => {
-    return (
-        <div
-            style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                alignItems: "center",
-                padding: "0rem 1rem",
-                background: "linear-gradient(135deg, #4b6cb7 0%, #182848 100%)",
-            }}
+const Navbar: React.FC = () => {
+  return (
+    <nav className="navbar navbar-expand-lg bg-body-tertiary">
+      <div className="container-fluid">
+        <button
+          className="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
         >
-            <RegisterSiteButton />
-            <div style={{ width: "10px" }} />
-            <LogoutButton />
+          <span className="navbar-toggler-icon"></span>
+        </button>
+        <div className="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+            <li className="nav-item">
+              <a className="nav-link active" aria-current="page" href="#">Home</a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link" href="#">Link</a>
+            </li>
+            {/* Dropdown部分にカスタムコンポーネントを配置 */}
+            <li className="nav-item dropdown">
+              <a
+                className="nav-link dropdown-toggle"
+                href="#"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Menu
+              </a>
+              <ul className="dropdown-menu">
+                <li>
+                  <RegisterSiteButton />
+                </li>
+                <li>
+                  <LogoutButton />
+                </li>
+              </ul>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link disabled">Disabled</a>
+            </li>
+          </ul>
+          <form className="d-flex" role="search">
+            <input
+              className="form-control me-2"
+              type="search"
+              placeholder="Search"
+              aria-label="Search"
+            />
+            <button className="btn btn-outline-success" type="submit">
+              Search
+            </button>
+          </form>
         </div>
-    );
+      </div>
+    </nav>
+  );
 };
 
-export default HeaderButtons;
+export default Navbar;
