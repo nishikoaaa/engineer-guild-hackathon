@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import "./TopPage.css";
 import RegisterSiteButton from "../../components/RegisterSiteButton"; // パスは実際のファイル位置に合わせて変更
+import HeaderButtons from "../../components/HeaderButton";
 
 interface Article {
   id: number;
@@ -72,11 +73,6 @@ const TopPage: React.FC = () => {
     }
   };
 
-  // ログアウト処理
-  const handleLogout = () => {
-      window.location.href = LOGOUT_URL;
-  };
-
   if (loading) return <p className="loading">ローディング中...</p>;
   if (error) return <p className="error">エラー: {error}</p>;
 
@@ -96,20 +92,7 @@ const TopPage: React.FC = () => {
       <div className="registration">
         <h1 className="sakuhinmei">TopPageです</h1>
       </div>
-      <button
-        onClick={handleLogout}
-        style={{
-          backgroundColor: "#f44336",
-          color: "white",
-          padding: "10px 20px",
-          marginTop: "20px",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer"
-        }}
-        >
-          ログアウト
-        </button>
+      <HeaderButtons />
       <div className="articles">
         {articles.map((article) => (
           <div key={article.id} className="article-card">
@@ -141,8 +124,7 @@ const TopPage: React.FC = () => {
           </div>
         ))}
       </div>
-          <RegisterSiteButton />
-      </div>
+    </div>
   );
 };
 
