@@ -10,11 +10,6 @@
     color: #fff;
 }
 
-.registration {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
 .articles {
     display: grid;
     gap: 2rem;
@@ -132,4 +127,25 @@
     height: 100%;
     background-color: #4B6CB7;
     border-radius: 50%;
+  }
+
+/* ロゴ用 */
+.registration {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.1rem;  /* gap をさらに小さく */
+    margin-bottom: 0.5rem;
+    justify-content: center;
+  }
+  
+  .logo {
+    max-width: 80px;  /* 必要に応じてサイズ調整 */
+    height: auto;
+    margin: 0;  /* 余分なマージンを削除 */
+  }
+  
+  .sakuhinmei {
+    margin: 0;   /* h1のデフォルトマージンを削除 */
+    white-space: nowrap;
   }
