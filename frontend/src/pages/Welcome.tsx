@@ -5,7 +5,10 @@ const WelcomePage: React.FC = () => {
   // Get Started ボタンがクリックされたときの処理
   const handleGetStarted = async () => {
     try {
-      const response = await fetch("http://localhost:4000/login");
+      const response = await fetch("http://localhost:4000/login", {
+        method: "GET",
+        credentials: "include",
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
