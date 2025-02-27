@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import "./TopPage.css";
 import RegisterSiteButton from "../../components/RegisterSiteButton"; // パスは実際のファイル位置に合わせて変更
 import HeaderButtons from "../../components/HeaderButton";
+import logo from "../../assets/logo.png";
+
 
 interface Article {
   id: number;
@@ -98,8 +100,12 @@ const TopPage: React.FC = () => {
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
       }}
     >
+      {/* <div className="logo-container">
+        
+      </div> */}
       <div className="registration">
-        <h1 className="sakuhinmei">InfoCompass</h1>
+        <img src={logo} alt="Logo" className="logo" />
+        <h1 className="sakuhinmei">SummaryMan</h1>
       </div>
       
       <nav className="menu-bar">

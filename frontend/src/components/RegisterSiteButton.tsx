@@ -95,7 +95,7 @@ const RegisterSiteButton: React.FC = () => {
           onClick={handleButtonClick}
           className="common-button"
         >
-          サイトを登録する
+          お気に入りサイトを登録
         </button>
       )}
       {resultMessage && (
