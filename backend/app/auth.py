@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, status, Query, Cookie
 from fastapi.security import OAuth2AuthorizationCodeBearer
-from fastapi.responses import Response, RedirectResponse
+from fastapi.responses import Response, RedirectResponse, JSONResponse
 from dotenv import load_dotenv
 import httpx
 import os
@@ -148,8 +148,10 @@ async def login():
 # ログアウト
 @router.get("/logout")
 async def logout(response: Response):
+    print("ログアウト処理が呼び出されました")
+    response = RedirectResponse(url="http://localhost:3000")
     response.delete_cookie("session_id")
-    return RedirectResponse(url="http://localhost:3000")
+    return response
 
 # ログイン後に呼び出されるコールバック
 @router.get("/login/callback/")
