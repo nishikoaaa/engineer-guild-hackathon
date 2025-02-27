@@ -63,7 +63,8 @@ def get_db_connection():
             password="password",
             database="db",
             use_unicode = True,
-            charset="utf8mb4"
+            charset="utf8mb4",
+            buffered=True
         )
         return conn
     except mysql.connector.Error as err:

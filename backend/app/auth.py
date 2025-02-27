@@ -88,7 +88,6 @@ def get_session(session_id: str):
         else:
             return session
     except mysql.connector.Error as err:
-        conn.rollback()
         print(f"Error gettin session: {err}")
         return None
     finally:
@@ -121,6 +120,8 @@ def answerd_survey(user_id: int):
         query = "SELECT * FROM survey WHERE userid = (%s)"
         cursor.execute(query, (user_id))
         result = cursor.fetchone()
+        print("リザルト")
+        print(result)
         if result is None:
             return False
         else:
@@ -205,6 +206,7 @@ async def login_callback(code: str = Query(...)):
     session_id = create_session_id()
     add_session(session_id, user_id)
 
+    # アンケート回答済みかどうかでリダイレクト先を分岐
     if not answerd_survey(user_id):
         redirect_url = "http://localhost:3000/QuestionPage"
 
