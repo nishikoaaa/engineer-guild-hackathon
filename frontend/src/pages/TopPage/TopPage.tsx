@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import "./TopPage.css";
 import RegisterSiteButton from "../../components/RegisterSiteButton";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlay, faStop } from "@fortawesome/free-solid-svg-icons";
 import HeaderButtons from "../../components/HeaderButton";
 
 interface Article {
@@ -177,15 +179,26 @@ const TopPage: React.FC = () => {
             {/* ▼ ここに再生/停止ボタンを追加 ▼ */}
             <button
               onClick={(e) =>
-                handleSpeechToggle(e, article.id, article.summary1000)
-              }
-              style={{
-                marginTop: "8px",
-                padding: "6px 12px",
-                cursor: "pointer",
-              }}
+                handleSpeechToggle(e, article.id, article.summary1000)}
+                className="article-audio-button"
+                title={isPlaying && readingArticleId === article.id ? "停止" : "記事の要約の読み上げ"}
             >
-              {isPlaying && readingArticleId === article.id ? "停止" : "読み上げ"}
+              {isPlaying && readingArticleId === article.id ? (
+                <FontAwesomeIcon
+                  icon={faStop}
+                  style={{
+                    fontSize: "24px",
+                    color: "#ccc",
+                  }}
+                />
+              ) : (
+                <FontAwesomeIcon
+                  icon={faPlay}
+                  style={{
+                    fontSize: "24px",
+                    color: "#ccc",
+                  }} />
+              )}
             </button>
           </div>
         ))}

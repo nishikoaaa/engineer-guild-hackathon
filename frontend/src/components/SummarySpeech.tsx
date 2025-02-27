@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlay, faStop } from "@fortawesome/free-solid-svg-icons";
 
 const SummarySpeech: React.FC = () => {
     const [text, setText] = useState<string>("");
@@ -90,8 +92,16 @@ const SummarySpeech: React.FC = () => {
                 <p>{text || "テキストを読み込み中..."}</p>
             </div>
             <div>
-                <button onClick={() => (isPlaying ? stopSpeech() : startSpeech(currentCharIndex))} style={{ margin: "10px" }} disabled={!text}>
-                    {isPlaying ? "停止" : "再生"}
+                <button
+                    onClick={() => (isPlaying ? stopSpeech() : startSpeech(currentCharIndex))}
+                    style={{ margin: "10px" }}
+                    disabled={!text}
+                >
+                    {isPlaying ? (
+                        <FontAwesomeIcon icon={faStop} size="lg" />
+                    ) : (
+                        <FontAwesomeIcon icon={faPlay} size="lg" />
+                    )}
                 </button>
                 <button onClick={restartSpeech} style={{ margin: "10px" }} disabled={!text}>
                     はじめから

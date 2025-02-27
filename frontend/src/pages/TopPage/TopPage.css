@@ -40,9 +40,10 @@
 .article-card {
     background-color: rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 1.5rem 1.5rem 4rem 1.5rem;
     transition: transform 0.3s, box-shadow 0.3s;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    position: relative;
 }
 
 .article-card:hover {
@@ -133,3 +134,25 @@
     background-color: #4B6CB7;
     border-radius: 50%;
   }
+
+  .article-audio-button {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+
+    background-color: rgba(255, 255, 255, 0.2);
+    border: none;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 4px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .article-audio-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transition: background-color 0.2s ease;
+  }
+
