@@ -177,7 +177,7 @@ const TopPage: React.FC = () => {
             {/* ▼ ここに再生/停止ボタンを追加 ▼ */}
             <button
               onClick={(e) =>
-                handleSpeechToggle(e, article.id, article.summary150)
+                handleSpeechToggle(e, article.id, article.summary1000)
               }
               style={{
                 marginTop: "8px",
