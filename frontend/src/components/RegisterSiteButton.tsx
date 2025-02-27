@@ -45,9 +45,7 @@ const RegisterSiteButton: React.FC = () => {
   return (
     <div
       style={{
-        position: "absolute",
-        top: "20px",
-        right: "20px",
+        margin: "20px",
         zIndex: 1000,
         backgroundColor: "rgba(255,255,255,0.9)",
         padding: "1rem",
