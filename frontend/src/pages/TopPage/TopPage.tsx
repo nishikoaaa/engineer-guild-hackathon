@@ -110,6 +110,7 @@ const TopPage: React.FC = () => {
     // 新しく読み上げ開始
     const utterance = new SpeechSynthesisUtterance(textToRead);
     utterance.lang = "ja-JP";
+    utterance.rate = 2.0;  // 2倍速に設定
     utterance.onend = () => {
       // 再生終了時にステートを戻す
       setIsPlaying(false);
@@ -133,6 +134,7 @@ const TopPage: React.FC = () => {
           <div className="circle-core"></div>
         </div>
       </div>
+      <p className="loading-text">ローディング中です</p>
     </div>
   );
 
@@ -173,7 +175,7 @@ const TopPage: React.FC = () => {
             </div>
             <div className="articlemain">
               <h2 className="title">{article.title}</h2>
-              <div className="picture">syashinn</div>
+              {/* <div className="picture">syashinn</div> */}
             </div>
             <div className="summary50words">
               <p>{article.summary150}</p>
