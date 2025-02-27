@@ -6,7 +6,7 @@ import RegisterSiteButton from "../../components/RegisterSiteButton"; // パス�
 interface Article {
   id: number;
   title: string;
-  summary50: string;
+  summary150: string;
   summary1000: string;
   content: string;
   url: string;
@@ -121,7 +121,7 @@ const TopPage: React.FC = () => {
               <div className="picture">syashinn</div>
             </div>
             <div className="summary50words">
-              <p>{article.summary50}
+              <p>{article.summary150}
               <button className="readbutton" style={{ display: "inline-block", marginLeft: "10px" }} onClick={() => handleLogRead(article.id)}>
                 <a
                 href={article.url}
