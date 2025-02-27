@@ -1,35 +1,25 @@
-@import url('https://fonts.googleapis.com/css?family=Exo:400,700');
+/* TopPage.css */
 
-html {
-    font-size:62.5%;
+.TopPage {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+    padding: 2rem;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: #fff;
 }
 
-  *, *::before, *::after {
-    box-sizing:border-box;
-}
-
-.clearfix::after {
-    content:'';
-    display:block;
-    clear:both;
-}
-
-*{
-    margin: 0px;
-    padding: 0px;
-}
-
-.registration{
-    padding-top: 3vh;
-    padding-bottom: 1vh;
+.registration {
+    text-align: center;
+    margin-bottom: 2rem;
 }
 
 .articles {
-    display: flex;
-    gap: 35px;
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 20px;
+    display: grid;
+    gap: 2rem;
+    padding: 1rem;
+    grid-template-columns: repeat(2, 1fr);
 }
 
 .common-button {
@@ -48,97 +38,51 @@ html {
 }
 
 .article-card {
-    width: calc(50% - 20px);
-    border-top: 7px solid #aaa;
-    border-bottom: 7px solid #aaa;
-    background-color: #eee;
-    padding: 10px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* アップするエフェクトとシャドウのトランジション */
-    aspect-ratio: 5/2.5;
-    background-color: #eee;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.releasedate{
+.article-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.releasedate p {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: #ddd;
+}
+
+.articlemain {
     display: flex;
-    font-size: 0.8vw;
-    height: 10%;
-    padding-bottom: 10px;
-}
-
-.articlemain{
-    display: flex;
-    width: 100%;
-    height: 40%;
-    gap: 10px;
-    font-weight: bold;
-}
-
-h2 {
-    padding: 0.25em 0.5em;/*上下 左右の余白*/
-    color: #494949;/*文字色*/
-    background: transparent;/*背景透明に*/
-    border-left: solid 5px #2f72ba;/*左線*/
-}
-
-.title {
-    flex: 5;
-    font-size: 2vw;
-    font-size: clamp(16px, 2vw, 32px);
-}
-
-.picture{
-    flex: 5;
-    justify-content: center;
     align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+.title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0;
+    width: 70%;
 }
 
-.summary50words{
+.picture {
+    margin-left: 5%;
+    width: 25%;
+    aspect-ratio: 4/3;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
     display: flex;
-    flex-direction: column;
-    font-size: 1.2vw;
-    height: 42%;
-    width: 100%;
-    padding-top: 2%;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    object-fit: cover;
 }
 
-.articlebutton {
-    color: black;  /* テキストカラーを黒に */
-    text-decoration: none;  /* 下線を消す */
-    display: flex;
-    padding-left: 80%;
+.summary50words p {
+    font-size: 1rem;
+    line-height: 1.4;
 }
-
-.readbutton {
-    display: inline-block;
-    margin-left: 10px;
-    background: none;
-    border: none;
-    padding: 0;
-  }
-  
-  .readlink {
-    text-decoration: none;
-    color: #00000086;
-    position: relative;
-    display: inline-block;
-    padding-bottom: 2px; /* 下線の位置調整 */
-  }
-
-  .readlink:hover {
-    color: #00000086; /* hover時に色が変わらないように */
-  }
-  
-  .underline {
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    height: 2px;
-    background-color: #00000086;
-    transform: scaleX(0);
-    transition: transform 0.3s ease-in-out;
-  }
-  
-  .readlink:hover .underline {
-    transform: scaleX(1);
-  }

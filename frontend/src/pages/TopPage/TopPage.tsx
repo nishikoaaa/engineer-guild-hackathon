@@ -53,7 +53,7 @@ const TopPage: React.FC = () => {
   }, []);
 
   // 記事クリック時のログ登録処理
-  const handleLogRead = async (articleId: number) => {
+  const handleCardClick = async (articleId: number, url: string) => {
     try {
       const response = await fetch(LOG_API_URL, {
         method: "POST",
@@ -69,6 +69,8 @@ const TopPage: React.FC = () => {
       console.log("ログ登録完了");
     } catch (err: any) {
       console.error("ログ登録エラー:", err.message);
+    } finally {
+      window.open(url, "_blank");
     }
   };
 
@@ -97,7 +99,12 @@ const TopPage: React.FC = () => {
       </nav>
       <div className="articles">
         {articles.map((article) => (
-          <div key={article.id} className="article-card">
+          <div
+            key={article.id}
+            className="article-card"
+            onClick={() => handleCardClick(article.id, article.url)}
+            style={{ cursor: "pointer" }}
+          >
             <div className="releasedate">
               <p>公開日: {new Date(article.published_date).toLocaleDateString()}</p>
             </div>
@@ -106,20 +113,7 @@ const TopPage: React.FC = () => {
               <div className="picture">syashinn</div>
             </div>
             <div className="summary50words">
-              <p>{article.summary150}
-              <button className="readbutton" style={{ display: "inline-block", marginLeft: "10px" }} onClick={() => handleLogRead(article.id)}>
-                <a
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="readlink"
-                >
-                  記事を読む ▶
-                  <span className="underline"></span>
-                </a>
-              </button>
-
-              </p>
+              <p>{article.summary150}</p>
 
             </div>
             
