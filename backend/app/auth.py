@@ -136,12 +136,15 @@ def answerd_survey(user_id: int):
 
 # ログイン
 @router.get("/login")
-async def login():
-    auth_url = (
-        f"{AUTHORIZATION_URL}?response_type=code&client_id={CLIENT_ID}&"
-        f"redirect_uri={REDIRECT_URI}&scope=openid%20email%20profile&"
-        f"access_type=offline&prompt=consent"
-    )
+async def login(current_user: Any = Depends(get_current_user)):
+    if current_user:
+        auth_url = "http://localhost:3000/TopPage"
+    else:
+        auth_url = (
+            f"{AUTHORIZATION_URL}?response_type=code&client_id={CLIENT_ID}&"
+            f"redirect_uri={REDIRECT_URI}&scope=openid%20email%20profile&"
+            f"access_type=offline&prompt=consent"
+        )
     return {"auth_url": auth_url}
 
 # ログアウト
