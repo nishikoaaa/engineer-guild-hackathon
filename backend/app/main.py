@@ -52,6 +52,8 @@ llm = ChatOpenAI(
     openai_api_key=key
 )
 
+index = faiss.read_index("/app/app/index_data/faiss_index.faiss")
+
 #############################################################
 # データベース関係
 
@@ -257,7 +259,6 @@ def search_articles(query_text, k=10):
     query_embedding = get_embedding(query_text)
     query_np = np.array([query_embedding]).astype('float32')
     # FAISSインデックスのファイルパス（事前に構築済みのものを読み込む）
-    index = faiss.read_index("/app/app/index_data/faiss_index.faiss")
     distances, indices = index.search(query_np, k)
     return distances[0], indices[0]
 

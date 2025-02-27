@@ -1,144 +1,151 @@
 @import url('https://fonts.googleapis.com/css?family=Exo:400,700');
 
+:root {
+  --primary-color: #182848;
+  --secondary-color: #4b6cb7;
+  --bg-gradient: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+  --card-bg: #ffffff;
+  --card-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
 html {
-    font-size:62.5%;
+  font-size: 62.5%;
 }
 
-  *, *::before, *::after {
-    box-sizing:border-box;
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-.clearfix::after {
-    content:'';
-    display:block;
-    clear:both;
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  background: var(--bg-gradient);
+  color: #333;
 }
 
-*{
-    margin: 0px;
-    padding: 0px;
+.TopPage {
+  padding: 2rem;
+  min-height: 100vh;
 }
 
-.registration{
-    padding-top: 3vh;
-    padding-bottom: 1vh;
+.registration {
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
+.sakuhinmei {
+  font-size: 2rem;
+  color: #fff;
+  margin: 0;
+}
+
+.menu-bar {
+  margin-bottom: 2rem;
+}
+
+/* 記事リスト */
 .articles {
-    display: flex;
-    gap: 35px;
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: center;
 }
 
-.common-button {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.3s ease;
-}
-
-.common-button:hover {
-    background-color: rgba(255, 255, 255, 0.3);
-}
-
+/* カードスタイル */
 .article-card {
-    width: calc(50% - 20px);
-    border-top: 7px solid #aaa;
-    border-bottom: 7px solid #aaa;
-    background-color: #eee;
-    padding: 10px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* アップするエフェクトとシャドウのトランジション */
-    aspect-ratio: 5/2.5;
-    background-color: #eee;
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  width: calc(50% - 2rem);
 }
 
-.releasedate{
-    display: flex;
-    font-size: 0.8vw;
-    height: 10%;
-    padding-bottom: 10px;
+.article-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
 }
 
-.articlemain{
-    display: flex;
-    width: 100%;
-    height: 40%;
-    gap: 10px;
-    font-weight: bold;
+.releasedate {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.5rem;
 }
 
-h2 {
-    padding: 0.25em 0.5em;/*上下 左右の余白*/
-    color: #494949;/*文字色*/
-    background: transparent;/*背景透明に*/
-    border-left: solid 5px #2f72ba;/*左線*/
+.articlemain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
 }
 
 .title {
-    flex: 5;
-    font-size: 2vw;
-    font-size: clamp(16px, 2vw, 32px);
+  font-size: 1.5rem;
+  margin: 0;
 }
 
-.picture{
-    flex: 5;
-    justify-content: center;
-    align-items: center;
+.picture {
+  width: 40%;
+  height: 100px;
+  background: #ccc;
+  border-radius: 4px;
 }
 
-.summary50words{
-    display: flex;
-    flex-direction: column;
-    font-size: 1.2vw;
-    height: 42%;
-    width: 100%;
-    padding-top: 2%;
+.summary50words {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #555;
 }
 
-.articlebutton {
-    color: black;  /* テキストカラーを黒に */
-    text-decoration: none;  /* 下線を消す */
-    display: flex;
-    padding-left: 80%;
+/* ボタン関連 */
+.common-button {
+  background-color: var(--secondary-color);
+  color: #fff;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
+.common-button:hover {
+  background-color: #3a5e9c;
+  transform: scale(1.05);
+}
+
+/* 読むボタン */
 .readbutton {
-    display: inline-block;
-    margin-left: 10px;
-    background: none;
-    border: none;
-    padding: 0;
-  }
-  
-  .readlink {
-    text-decoration: none;
-    color: #00000086;
-    position: relative;
-    display: inline-block;
-    padding-bottom: 2px; /* 下線の位置調整 */
-  }
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
 
-  .readlink:hover {
-    color: #00000086; /* hover時に色が変わらないように */
-  }
-  
-  .underline {
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    height: 2px;
-    background-color: #00000086;
-    transform: scaleX(0);
-    transition: transform 0.3s ease-in-out;
-  }
-  
-  .readlink:hover .underline {
-    transform: scaleX(1);
-  }
+.readlink {
+  text-decoration: none;
+  color: var(--primary-color);
+  position: relative;
+  padding-bottom: 2px;
+}
+
+.readlink:hover {
+  color: var(--primary-color);
+}
+
+.underline {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--primary-color);
+  transform: scaleX(0);
+  transition: transform 0.3s ease-in-out;
+}
+
+.readlink:hover .underline {
+  transform: scaleX(1);
+}

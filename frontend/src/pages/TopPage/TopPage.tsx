@@ -1,7 +1,5 @@
-// TopPage.tsx
 import React, { useEffect, useState } from "react";
 import "./TopPage.css";
-import RegisterSiteButton from "../../components/RegisterSiteButton"; // パスは実際のファイル位置に合わせて変更
 import HeaderButtons from "../../components/HeaderButton";
 
 interface Article {
@@ -76,18 +74,7 @@ const TopPage: React.FC = () => {
   if (error) return <p className="error">エラー: {error}</p>;
 
   return (
-    <div
-      className="TopPage"
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #4b6cb7 0%, #182848 100%)",
-        padding: "2rem",
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-      }}
-    >
+    <div className="TopPage">
       <div className="registration">
         <h1 className="sakuhinmei">InfoCompass</h1>
       </div>
@@ -95,9 +82,18 @@ const TopPage: React.FC = () => {
       <nav className="menu-bar">
         <HeaderButtons />
       </nav>
+
       <div className="articles">
         {articles.map((article) => (
-          <div key={article.id} className="article-card">
+          <div
+            key={article.id}
+            className="article-card"
+            onClick={() => {
+              handleLogRead(article.id);
+              window.open(article.url, "_blank");
+            }}
+            style={{ cursor: "pointer" }}
+          >
             <div className="releasedate">
               <p>公開日: {new Date(article.published_date).toLocaleDateString()}</p>
             </div>
@@ -106,23 +102,8 @@ const TopPage: React.FC = () => {
               <div className="picture">syashinn</div>
             </div>
             <div className="summary50words">
-              <p>{article.summary150}
-              <button className="readbutton" style={{ display: "inline-block", marginLeft: "10px" }} onClick={() => handleLogRead(article.id)}>
-                <a
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="readlink"
-                >
-                  記事を読む ▶
-                  <span className="underline"></span>
-                </a>
-              </button>
-
-              </p>
-
+              <p>{article.summary150}</p>
             </div>
-            
           </div>
         ))}
       </div>
