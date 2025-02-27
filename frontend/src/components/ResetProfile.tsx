@@ -13,7 +13,7 @@ const ProfileEditButton: React.FC = () => {
         className="common-button" 
         onClick={handleEditClick}
         >
-            プロフィール編集
+            アンケート編集
         </button>
     );
 };
