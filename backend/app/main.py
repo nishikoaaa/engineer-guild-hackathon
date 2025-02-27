@@ -343,7 +343,7 @@ def recommend(current_user: Any = Depends(auth.get_current_user)):
     print("既読の記事ID:", read_article_ids)
 
     # FAISSで類似検索（上位10件）
-    distances, indices = search_articles(genre_keywords, k=9+len(read_article_ids))
+    distances, indices = search_articles(genre_keywords, k=10+len(read_article_ids))
     
     # DBから全記事を取得
     articles = read_articles()
