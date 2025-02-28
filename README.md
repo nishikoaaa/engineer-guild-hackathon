@@ -22,7 +22,7 @@
 
 ## サマリーマンについて
 
-**アプリ名:** サマリーマン
+**アプリ名: サマリーマン**
 
 **概要:**  
 ユーザーのニーズに合わせたニュース記事や技術ブログなどを自動的に収集し、収集したコンテンツを要約して表示するサービスです。  
@@ -37,15 +37,17 @@
 
 以下の環境変数は、プロジェクトルートに配置する `.env` ファイルに記載してください。
 
-| 変数名              | 役割                                  | デフォルト値                             | DEV 環境での値 |
-| ------------------- | ------------------------------------- | ---------------------------------------- | -------------- |
-| MYSQL_ROOT_PASSWORD | MySQL のルートパスワード              | rootpassword                             |                |
-| MYSQL_DATABASE      | MySQL のデータベース名                | db                                       |                |
-| MYSQL_USER          | MySQL のユーザ名                      | user                                     |                |
-| MYSQL_PASSWORD      | MySQL のパスワード                    | password                                 |                |
-| REDIRECT_URI        | 認証後のリダイレクト先 URI              | http://localhost:4000/login/callback     |                |
-| OPENAI_API_KEY      | OpenAI API キー                       | （空欄）                                 |                |
-| CLIENT_SECRET       | クライアントシークレット              | （空欄）                                 |                |
+| 変数名              | 役割                                  | デフォルト値                             | 
+| ------------------- | ------------------------------------- | ---------------------------------------- |
+| MYSQL_ROOT_PASSWORD | MySQL のルートパスワード              | rootpassword                             |
+| MYSQL_DATABASE      | MySQL のデータベース名                | db                                       |
+| MYSQL_USER          | MySQL のユーザ名                      | user                                     |
+| MYSQL_PASSWORD      | MySQL のパスワード                    | password                                 |
+| REDIRECT_URI        | 認証後のリダイレクト先 URI              | http://localhost:4000/login/callback     |
+| OPENAI_API_KEY      | OpenAI API キー                       | （空欄）                                 |
+| CLIENT_SECRET       | クライアントシークレット              | （空欄）                                 |
+| CLIENT_ID           | クライアントID                      | （空欄）|
+| FIRECRAWL_API_KEY   | FireCrawl API キー | （空欄）|
 
 その他の環境変数については、必要に応じて追加してください。
 
@@ -105,3 +107,44 @@
         ├── archive
         ├── live
         └── renewal
+```
+## 開発環境構築
+
+<!-- コンテナの作成方法、パッケージのインストール方法など、開発環境構築に必要な情報を記載 -->
+
+### コンテナの作成と起動
+
+.env ファイルを以下の環境変数例と[環境変数の一覧](#環境変数の一覧)を元に作成
+
+.env
+```bash
+MYSQL_ROOT_PASSWORD=rootpassword
+MYSQL_DATABASE=db
+MYSQL_USER=user
+MYSQL_PASSWORD=password
+REDIRECT_URI=http://localhost:4000/login/callback
+OPENAI_API_KEY=
+FIRECRAWL_API_KEY=
+CLIENT_ID=
+CLIENT_SECRET=
+```
+
+
+.env ファイルを作成後、以下のコマンドで開発環境を構築
+
+```bash
+docker compose up --build
+```
+
+### 動作確認
+
+http://localhost:3000 にアクセスできるか確認
+アクセスできたら成功
+
+### コンテナの停止
+
+以下のコマンドでコンテナを停止することができます
+
+```bash
+docker compose stop
+```
