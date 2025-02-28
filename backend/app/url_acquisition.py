@@ -135,7 +135,7 @@ def main():
             remaining = total_new - idx
             print(f"【進捗】{idx} 件目の記事URLを処理中。残り未実行URL数: {remaining} 件")
             subprocess.run(["python", "web_Acquisition.py", article_url])
-            if idx >= 20:
+            if idx >= 30:
                 break
 
 if __name__ == "__main__":

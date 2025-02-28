@@ -94,7 +94,7 @@ def generate_basic_info_node(state: State, config) -> State:
     state["basic_attempt"] = state.get("basic_attempt", 0) + 1
     print(f"[generate_basic_info] 試行回数 {state['basic_attempt']} 回目、URL: {state['url']}")
     llm = ChatOpenAI(
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini-2024-07-18",
         temperature=0,
         openai_api_key=OPENAI_API_KEY
     )
@@ -164,7 +164,7 @@ def generate_detailed_summary_node(state: State, config) -> State:
     state["detailed_attempt"] = state.get("detailed_attempt", 0) + 1
     print(f"[generate_detailed_summary] 試行回数 {state['detailed_attempt']} 回目、URL: {state['url']}")
     llm = ChatOpenAI(
-        model_name="gpt-4o",
+        model_name="gpt-4o-mini-2024-07-18",
         temperature=0,
         openai_api_key=OPENAI_API_KEY
     )
