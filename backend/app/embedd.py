@@ -109,7 +109,7 @@ def get_embedding(text, model="text-embedding-ada-002"):
 # 各記事を1件ずつベクトル化する（例：記事タイトルと本文を連結）
 embeddings = []
 for article in article_list:
-    if article[1] is None or article[4] is None:
+    if article[1] is None or article[3] is None:
         print(f"Skipping article ID {article[0]} due to missing summary.")
         continue  # summary150 または summary1000 が None の場合、スキップ
     text_to_embed = "タイトル：" + str(article[1]) + "\n" + "本文" + str(article[3])
